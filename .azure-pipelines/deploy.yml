@@ -4,7 +4,7 @@ parameters:
 
 jobs:
 - deployment: Publish
-  environment: $(extensionId)-${{ parameters.environment }}
+  environment: deployment-status-${{ parameters.environment }}
   pool:
     vmImage: ubuntu-latest
   strategy:
@@ -82,7 +82,12 @@ jobs:
             ${{ if eq(parameters.environment, 'prod') }}:
               extensionName: '$(extensionName)'
             extensionVersion: '$(Build.BuildNumber)'
-            extensionVisibility: private
+            # Dev and test stay private to the org. Prod is listed publicly,
+            # marked as preview on the Marketplace.
+            ${{ if ne(parameters.environment, 'prod') }}:
+              extensionVisibility: private
+            ${{ if eq(parameters.environment, 'prod') }}:
+              extensionVisibility: publicpreview
             noWaitValidation: true
 
         - task: IsAzureDevOpsExtensionValid@5

@@ -53,10 +53,11 @@ the `verify-live` skill rather than at install time.
 ## Publishing
 
 CI does this: `.azure-pipelines/build.yml` runs tests, builds and packages both variants;
-`deploy.yml` publishes. All are private and shared with the `excelery` org:
+`deploy.yml` publishes to Azure DevOps environments `deployment-status-<env>`:
 
-- **dev** (`<id>-dev`): every branch. Loads code from `localhost:3000`.
-- **test** (`<id>-test`): every branch, after approval on the test environment. The real build.
+- **dev** (`<id>-dev`): every branch, private to the `excelery` org. Loads code from `localhost:3000`.
+- **test** (`<id>-test`): every branch, private to the org, after approval on the test environment. The real build.
+- **prod** (`<id>`): `main` only, after test and approval on the prod environment. Public, marked Preview.
 
 After each publish, `IsAzureDevOpsExtensionValid@5` waits for Marketplace validation, using the same
 service connection.
