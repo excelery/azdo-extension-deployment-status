@@ -12,13 +12,15 @@ The extension does not write data to work items; it only reads existing links. U
 
 ## Get started
 
+> **Note:** During initial testing, the extension is behind a preview feature. Open **User settings > Preview features** and turn on **Deployment Status to Boards for YAML**.
+
 ### 1. Enable automatic work item linking
 
-In your pipeline, open **Settings** and turn on **Automatically link work items included in this run**. This is what creates the **Integrated in build** links on the work items
+In your pipeline, open **Settings** and turn on **Automatically link work items included in this run**. This is what creates the **Integrated in build** links on the work items.
 
 ![Pipeline settings](static/screenshots/pipeline-settings.png)
 
-### 3. Configure Boards Integration
+### 2. Configure Boards Integration
 
 In pipeline menu, open **⋯ > Boards Integration**.
 
@@ -28,7 +30,7 @@ Choose a deployment type for each environment.
 
 ![Boards Integration panel](static/screenshots/boards-integration.png)
 
-### 4. Add the new control to your work item forms
+### 3. Add the new control to your work item forms
 
 Open **Organization settings > Process** and select your process. For each work item type where you want deployment status displayed, open **Layout**.
 
