@@ -25,6 +25,7 @@ For text users see (Marketplace page, manifest, menus, panels, messages):
 - **Start from Microsoft's source.** Read the wording and screenshots in `MicrosoftDocs/azure-devops-docs`
   (`docs/boards/backlogs/add-link.md`, `docs/pipelines/integrations/configure-pipelines-work-tracking.md`)
   before writing, instead of inventing phrasing.
+- **No bold in the README.** Plain text reads better; name UI items as they appear.
 - **Match the built-in format** too: times read "59m ago", "3h ago", then "May 26".
 
 ## What ships
