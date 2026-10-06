@@ -4,7 +4,7 @@ This extension brings the Classic release pipeline feature [Automatically link w
 
 The Azure DevOps team has this feature on the [roadmap](https://learn.microsoft.com/en-us/azure/devops/release-notes/roadmap/2024/boards-yaml-stage-status-on-work-item). This extension should be considered as a temporary workaround until it is released.
 
-The extension adds a custom control to Azure Boards work item forms that displays deployment status for YAML pipelines. It uses the same style as the classic Deployment control. But instead of using **Integrated in release stage** link, it uses the existing **Integrated in build** links to query and display [Deployment Jobs](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/deployment-jobs?view=azure-devops) targeting Environments. 
+The extension adds a custom control to Azure Boards work item forms that displays deployment status for YAML pipelines. It uses the same style as the classic Deployment control. But instead of using Integrated in release stage link, it uses the existing Integrated in build links to query and display [Deployment Jobs](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/deployment-jobs?view=azure-devops) targeting Environments. 
 
 The extension does not write data to work items; it only reads existing links. Uninstalling it will not affect your work items or any existing data.
 
@@ -12,17 +12,17 @@ The extension does not write data to work items; it only reads existing links. U
 
 ## Get started
 
-> **Note:** During initial testing, the extension is behind a preview feature. Open **User settings > Preview features** and turn on **Deployment Status to Boards for YAML**.
+> Note: During initial testing, the extension is behind a preview feature. Open User settings > Preview features and turn on Deployment Status to Boards for YAML.
 
 ### 1. Enable automatic work item linking
 
-In your pipeline, open **Settings** and turn on **Automatically link work items included in this run**. This is what creates the **Integrated in build** links on the work items.
+In your pipeline, open Settings and turn on Automatically link work items included in this run. This is what creates the Integrated in build links on the work items.
 
 ![Pipeline settings](static/screenshots/pipeline-settings.png)
 
 ### 2. Configure Boards Integration
 
-In pipeline menu, open **⋯ > Boards Integration**.
+In pipeline menu, open ⋯ > Boards Integration.
 
 ![Boards Integration in the pipeline menu](static/screenshots/pipeline-menu.png)
 
@@ -32,17 +32,17 @@ Choose a deployment type for each environment.
 
 ### 3. Add the new control to your work item forms
 
-Open **Organization settings > Process** and select your process. For each work item type where you want deployment status displayed, open **Layout**.
+Open Organization settings > Process and select your process. For each work item type where you want deployment status displayed, open Layout.
 
-Add a new **Deployment** group, in the same column.
+Add a new Deployment group, in the same column.
 
-Add the **Deployment Status for YAML** custom control to the group.
+Add the Deployment Status for YAML custom control to the group.
 
 ![Add the custom control](static/screenshots/add-control.png)
 
 ![Work item layout with the Deployment group and custom control](static/screenshots/layout.png)
 
-If not needed for classic release pipelines, Hide the built-in **Deployment** section.
+If not needed for classic release pipelines, Hide the built-in Deployment section.
 
 ## Permissions and privacy
 
