@@ -11,6 +11,7 @@ Applies to PR descriptions, commits, review comments, docs and all text users se
   data. Not choppy fragments, not long paragraphs.
 - State the fact. Skip the justification unless asked.
 - Put only what a reader needs up front; details go in the code or docs.
+- Commits keep the `Co-Authored-By: Claude` trailer. No session links in commits or PR descriptions.
 
 For text users see (Marketplace page, manifest, menus, panels, messages):
 
