@@ -4,7 +4,7 @@ parameters:
 
 jobs:
 - deployment: Publish
-  environment: $(extensionId)-${{ parameters.environment }}
+  environment: deployment-status-${{ parameters.environment }}
   pool:
     vmImage: ubuntu-latest
   strategy:
