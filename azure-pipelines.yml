@@ -23,7 +23,7 @@ trigger:
       - .mcp.json
 
 # Pull requests are validated by GitHub Actions. Every push here publishes
-# private dev and test builds.
+# private dev and test builds; main also publishes the public build.
 pr: none
 
 variables:
@@ -51,3 +51,13 @@ stages:
   - template: .azure-pipelines/deploy.yml
     parameters:
       environment: test
+
+- stage: DeployProd
+  dependsOn: DeployTest
+  # Public Marketplace listing, from main only. Gate it with an approval on
+  # the prod environment.
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - template: .azure-pipelines/deploy.yml
+    parameters:
+      environment: prod
