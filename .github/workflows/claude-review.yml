@@ -71,6 +71,14 @@ jobs:
       - name: Fail on blocking findings
         env:
           RESULT: ${{ steps.review.outputs.structured_output }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
           echo "$RESULT"
+          # The action skips itself when this workflow differs from main, and
+          # then reports nothing. Let people's pull requests through, but never
+          # auto-merge an unreviewed Dependabot update.
+          if [ -z "$RESULT" ]; then
+            test "$AUTHOR" != "dependabot[bot]"
+            exit
+          fi
           test "$(echo "$RESULT" | jq -r .blocking)" = "false"
