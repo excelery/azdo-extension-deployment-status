@@ -1,0 +1,9 @@
+variables:
+  extensionId: 'deployment-status-to-boards'
+  extensionName: 'Deployment Status to Boards for YAML'
+  publisherId: 'excelery'
+  sourceDir: $(Build.SourcesDirectory)
+  serviceConnection: spn-azdo-marketplace-publish
+  shareWith: 'excelery'
+  majorVersion: 0
+  minorVersion: 2

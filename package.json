@@ -1,0 +1,54 @@
+{
+  "name": "azdo-extension-deployment-status",
+  "version": "0.1.0",
+  "description": "Report deployment status to Azure Boards for YAML pipelines deploying to Environments",
+  "engines": {
+    "node": ">=22.15.0"
+  },
+  "overrides": {
+    "azure-devops-extension-api": {
+      "azure-devops-extension-sdk": "$azure-devops-extension-sdk"
+    }
+  },
+  "scripts": {
+    "clean": "rimraf ./dist ./out",
+    "compile": "npm run clean && webpack --mode production",
+    "compile:dev": "npm run clean && webpack --mode development",
+    "build": "npm run compile",
+    "build:dev": "npm run compile:dev",
+    "start:dev": "webpack serve --mode development",
+    "package:dev": "npm run compile:dev && tfx extension create --overrides-file configs/dev.json --manifest-globs vss-extension.json \"src/**/*.manifest.json\" --output-path out",
+    "package:prod": "npm run compile && tfx extension create --overrides-file configs/release.json --manifest-globs vss-extension.json \"src/**/*.manifest.json\" --output-path out --rev-version",
+    "publish-extension": "tfx extension publish --manifest-globs vss-extension.json \"src/**/*.manifest.json\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "fixtures": "node scripts/fixtures.mjs"
+  },
+  "dependencies": {
+    "azure-devops-extension-api": "^5.276.0",
+    "azure-devops-extension-sdk": "^5.0.0",
+    "azure-devops-ui": "^2.277.0",
+    "react": "^16.8.1",
+    "react-dom": "^16.8.1",
+    "tslib": "^2.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "~17.0.38",
+    "@types/react-dom": "~17.0.11",
+    "copy-webpack-plugin": "^14.0.0",
+    "css-loader": "^7.1.4",
+    "file-loader": "^6.2.0",
+    "rimraf": "^6.1.3",
+    "sass": "^1.77.0",
+    "sass-loader": "^17.0.0",
+    "style-loader": "^4.0.0",
+    "tfx-cli": "^0.23.4",
+    "ts-loader": "^9.6.2",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.2",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^7.2.2",
+    "webpack-dev-server": "^6.0.0"
+  }
+}

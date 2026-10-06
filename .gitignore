@@ -1,0 +1,7 @@
+node_modules
+dist
+out
+*.vsix
+.vs
+.vscode/edge-debug-profile
+test-results/

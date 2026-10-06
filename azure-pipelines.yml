@@ -1,0 +1,53 @@
+name: $(majorVersion).$(minorVersion)$(rev:.r)
+
+trigger:
+  # One run at a time per branch. Overlapping runs can publish out of order,
+  # and the Marketplace rejects a version lower than the one already published.
+  batch: true
+  branches:
+    include:
+      - main
+      - feature/*
+      - bug/*
+  # Files that are not part of the extension package do not trigger a build.
+  paths:
+    exclude:
+      - SECURITY.md
+      - CONTRIBUTING.md
+      - CLAUDE.md
+      - docs
+      - scripts
+      - .claude
+      - .github
+      - .vscode
+      - .mcp.json
+
+# Pull requests are validated by GitHub Actions. Every push here publishes
+# private dev and test builds.
+pr: none
+
+variables:
+  - template: .azure-pipelines/variables.yml
+
+stages:
+- stage: Build
+  jobs:
+  - template: .azure-pipelines/build.yml
+
+- stage: DeployDev
+  dependsOn: Build
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+  jobs:
+  - template: .azure-pipelines/deploy.yml
+    parameters:
+      environment: dev
+
+- stage: DeployTest
+  dependsOn: Build
+  # Release build (assets packaged, no localhost), private and shared with
+  # the org. Gate it with an approval on the test environment.
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+  jobs:
+  - template: .azure-pipelines/deploy.yml
+    parameters:
+      environment: test

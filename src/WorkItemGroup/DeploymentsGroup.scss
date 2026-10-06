@@ -1,0 +1,142 @@
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+}
+
+#root {
+  display: flow-root;
+  width: 100%;
+}
+
+.dsb-root {
+  box-sizing: border-box;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12px;
+  color: rgba(var(--palette-neutral-100, 0, 0, 0), 0.9);
+  padding: 4px 0 8px 0;
+  width: 100%;
+}
+
+.dsb-loading,
+.dsb-error {
+  color: rgba(var(--palette-neutral-100, 0, 0, 0), 0.55);
+  padding: 8px 0;
+}
+
+/* Matches the built-in Deployment section's empty state. */
+.dsb-empty {
+  background-color: rgb(var(--palette-neutral-4, 244, 244, 244));
+  color: rgba(var(--palette-neutral-100, 0, 0, 0), 0.9);
+  font-size: 14px;
+  line-height: 20px;
+  margin: 4px 0;
+  padding: 12px 16px;
+
+  a {
+    color: var(--communication-foreground, #0078d4);
+  }
+}
+
+.dsb-group + .dsb-group {
+  margin-top: 16px;
+}
+
+.dsb-group-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.dsb-pipeline {
+  border: 1px solid rgba(var(--palette-neutral-20, 0, 0, 0), 0.4);
+  border-radius: 2px;
+  margin-bottom: 6px;
+}
+
+.dsb-pipeline-header {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  padding: 8px;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+
+  &:hover {
+    background-color: rgba(var(--palette-neutral-10, 0, 0, 0), 0.5);
+  }
+}
+
+.dsb-pipeline-text {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.dsb-pipeline-name {
+  color: var(--communication-foreground, #0078d4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsb-pipeline-subtitle {
+  color: rgba(var(--palette-neutral-100, 0, 0, 0), 0.55);
+}
+
+.dsb-status {
+  display: block;
+  flex: 0 0 14px;
+  margin-right: 8px;
+}
+
+.dsb-chevron {
+  align-items: center;
+  color: rgba(var(--palette-neutral-100, 0, 0, 0), 0.55);
+  display: flex;
+  flex: 0 0 auto;
+  margin-left: 8px;
+  transition: transform 0.15s ease;
+
+  &--open {
+    transform: rotate(180deg);
+  }
+}
+
+.dsb-runs {
+  border-top: 1px solid rgba(var(--palette-neutral-20, 0, 0, 0), 0.4);
+  padding: 4px 8px 8px 8px;
+}
+
+.dsb-run {
+  align-items: center;
+  display: flex;
+  padding: 4px 0 4px 16px;
+}
+
+.dsb-pipeline-name:hover {
+  text-decoration: underline;
+}
+
+.dsb-run-link {
+  color: var(--communication-foreground, #0078d4);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.dsb-run-arrow {
+  color: rgba(var(--palette-neutral-100, 0, 0, 0), 0.55);
+  margin: 0 6px;
+}
+
+.dsb-run-stage {
+  color: rgba(var(--palette-neutral-100, 0, 0, 0), 0.9);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

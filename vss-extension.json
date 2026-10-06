@@ -1,0 +1,112 @@
+{
+  "manifestVersion": 1,
+  "id": "deployment-status-to-boards",
+  "publisher": "excelery",
+  "version": "0.1.0",
+  "name": "Deployment Status to Boards for YAML",
+  "public": false,
+  "description": "Report deployment status to Azure Boards from YAML pipelines.",
+  "icons": {
+    "default": "static/logo.png"
+  },
+  "targets": [
+    {
+      "id": "Microsoft.VisualStudio.Services"
+    }
+  ],
+  "categories": [
+    "Azure Boards"
+  ],
+  "tags": [
+    "Deployment status",
+    "Deployment control",
+    "Azure Boards",
+    "Azure Pipelines",
+    "YAML pipelines",
+    "Multi-stage pipelines",
+    "Environments",
+    "Work item links",
+    "Traceability",
+    "Release management",
+    "DevOps"
+  ],
+  "branding": {
+    "color": "rgb(0, 0, 0)",
+    "theme": "dark"
+  },
+  "content": {
+    "details": {
+      "path": "README.md"
+    }
+  },
+  "scopes": [
+    "vso.work",
+    "vso.build"
+  ],
+  "files": [
+    {
+      "path": "static",
+      "addressable": true
+    },
+    {
+      "path": "src",
+      "addressable": true
+    },
+    {
+      "path": "dist",
+      "addressable": true
+    },
+    {
+      "path": "PRIVACY.md",
+      "addressable": false
+    },
+    {
+      "path": "SUPPORT.md",
+      "addressable": false
+    },
+    {
+      "path": "LICENSE",
+      "addressable": false
+    }
+  ],
+  "contributions": [
+    {
+      "id": "preview",
+      "type": "ms.vss-web.feature",
+      "targets": [
+        "ms.vss-web.managed-features"
+      ],
+      "properties": {
+        "name": "Deployment Status to Boards for YAML",
+        "userConfigurable": true,
+        "hostConfigurable": false,
+        "defaultState": false
+      }
+    }
+  ],
+  "galleryFlags": [
+    "Private",
+    "Preview"
+  ],
+  "links": {
+    "getstarted": {
+      "uri": "https://github.com/excelery/azdo-extension-deployment-status#get-started"
+    },
+    "learn": {
+      "uri": "https://github.com/excelery/azdo-extension-deployment-status#readme"
+    },
+    "support": {
+      "uri": "https://github.com/excelery/azdo-extension-deployment-status/issues"
+    },
+    "privacypolicy": {
+      "uri": "https://github.com/excelery/azdo-extension-deployment-status/blob/main/PRIVACY.md"
+    },
+    "license": {
+      "uri": "https://github.com/excelery/azdo-extension-deployment-status/blob/main/LICENSE"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "uri": "https://github.com/excelery/azdo-extension-deployment-status"
+  }
+}

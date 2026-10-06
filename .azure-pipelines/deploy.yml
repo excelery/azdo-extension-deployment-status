@@ -1,0 +1,98 @@
+parameters:
+- name: environment
+  type: string
+
+jobs:
+- deployment: Publish
+  environment: $(extensionId)-${{ parameters.environment }}
+  pool:
+    vmImage: ubuntu-latest
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+        - download: current
+          artifact: drop
+
+        # Dev and test are installed side by side. Add the environment to the names
+        # users choose from (preview feature, custom control, menu item), and point each
+        # contribution's constraint at this install's own preview feature so that
+        # enabling one install's feature does not show another install's UI.
+        - ${{ if ne(parameters.environment, 'prod') }}:
+          - bash: |
+              set -euo pipefail
+              work=$(mktemp -d)
+              cd "$work"
+              unzip -q "$VSIX" extension.vsomanifest
+              node -e '
+                const fs = require("fs");
+                const manifest = JSON.parse(fs.readFileSync("extension.vsomanifest", "utf8"));
+                const env = process.argv[1];
+                const ownFeature = `excelery.deployment-status-to-boards-${env}.preview`;
+                for (const c of manifest.contributions || []) {
+                  for (const constraint of c.constraints || []) {
+                    if (constraint.properties && constraint.properties.featureId) {
+                      constraint.properties.featureId = ownFeature;
+                    }
+                  }
+                  if (c.properties && c.properties.name &&
+                      (c.type === "ms.vss-web.feature" || c.type === "ms.vss-work-web.work-item-form-control")) {
+                    c.properties.name += ` (${env})`;
+                  }
+                  if (c.properties && c.properties.text && c.type === "ms.vss-web.action") {
+                    c.properties.text += ` (${env})`;
+                  }
+                }
+                fs.writeFileSync("extension.vsomanifest", JSON.stringify(manifest));
+              ' "${{ parameters.environment }}"
+              zip -q "$VSIX" extension.vsomanifest
+            displayName: Tag names and feature constraints with the environment
+            env:
+              ${{ if eq(parameters.environment, 'dev') }}:
+                VSIX: $(Pipeline.Workspace)/drop/$(extensionId)-dev-$(Build.BuildNumber).vsix
+              ${{ if ne(parameters.environment, 'dev') }}:
+                VSIX: $(Pipeline.Workspace)/drop/$(extensionId)-$(Build.BuildNumber).vsix
+
+        - task: TfxInstaller@5
+          displayName: Use Node CLI for Azure DevOps
+
+        - task: PublishAzureDevOpsExtension@5
+          # The reference name is what makes $(publish.Extension.OutputPath)
+          # resolve for the validation step below.
+          name: publish
+          displayName: Publish extension
+          inputs:
+            connectTo: 'VsTeam'
+            connectedServiceName: '$(serviceConnection)'
+            fileType: vsix
+            # dev publishes the dev-override vsix (baseUri -> localhost); every
+            # other environment publishes the release vsix.
+            ${{ if eq(parameters.environment, 'dev') }}:
+              vsixFile: '$(Pipeline.Workspace)/drop/$(extensionId)-dev-$(Build.BuildNumber).vsix'
+            ${{ if ne(parameters.environment, 'dev') }}:
+              vsixFile: '$(Pipeline.Workspace)/drop/$(extensionId)-$(Build.BuildNumber).vsix'
+            publisherId: '$(publisherId)'
+            # Keep the base id here: extensionTag is appended to it, so setting
+            # both would publish as <id>-<env>-<env>.
+            extensionId: '$(extensionId)'
+            ${{ if ne(parameters.environment, 'prod') }}:
+              extensionTag: '-${{ parameters.environment }}'
+              extensionName: '$(extensionName) (${{ parameters.environment }})'
+              shareWith: '$(shareWith)'
+            ${{ if eq(parameters.environment, 'prod') }}:
+              extensionName: '$(extensionName)'
+            extensionVersion: '$(Build.BuildNumber)'
+            extensionVisibility: private
+            noWaitValidation: true
+
+        - task: IsAzureDevOpsExtensionValid@5
+          displayName: Wait for Marketplace validation
+          inputs:
+            connectTo: 'VsTeam'
+            connectedServiceName: '$(serviceConnection)'
+            method: 'id'
+            publisherId: '$(publisherId)'
+            extensionId: '$(extensionId)'
+            ${{ if ne(parameters.environment, 'prod') }}:
+              extensionTag: '-${{ parameters.environment }}'
+            extensionVersion: '$(Build.BuildNumber)'

@@ -1,0 +1,6 @@
+{
+  "id": "deployment-status-to-boards-dev",
+  "public": false,
+  "name": "Deployment status to Boards (dev)",
+  "baseUri": "https://localhost:3000"
+}

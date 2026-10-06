@@ -1,0 +1,64 @@
+name: CI
+
+# Validation only. Releases are published from Azure Pipelines, which holds the
+# Marketplace credentials -- deliberately, so they never live in GitHub.
+#
+# This exists mainly because Azure Pipelines will not run on pull requests from
+# forks with secrets available, so without it a community contribution arrives
+# with no checks at all.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Actions are pinned to commit SHAs: a tag is mutable, so `@v4` is a
+      # supply chain dependency on whoever can move that tag.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - run: npm ci
+
+      - name: Audit runtime dependencies
+        # Only runtime dependencies ship to users; a dev-only advisory should
+        # not block a release. High and critical fail, lower severities are
+        # left to Dependabot.
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Test
+        run: npm test
+        env:
+          CI: "true"
+
+      - name: Build
+        run: npm run build
+
+      - name: Package
+        # tfx validates the manifests. It does not validate scopes -- those only
+        # fail at install -- so a green package is not proof the manifest is good.
+        run: |
+          npx tfx extension create \
+            --overrides-file configs/release.json \
+            --manifest-globs vss-extension.json "src/**/*.manifest.json" \
+            --output-path out
+
+      - name: Publish test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: test-results
+          path: test-results/
+          if-no-files-found: ignore

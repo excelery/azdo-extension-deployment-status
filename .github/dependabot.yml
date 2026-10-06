@@ -1,0 +1,31 @@
+version: 2
+
+# The extension bundles its dependencies into JavaScript that runs inside every
+# installing organization's Azure DevOps session. A compromised package is the
+# most realistic route to harming users, so dependency freshness is the control
+# that matters most here.
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Patch and minor bumps are reviewed together to keep the pull request
+      # count manageable; majors arrive separately because they need thought.
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # React 16 is deliberate: azure-devops-ui targets it, and the manifest
+      # contributions render inside the host's React tree.
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

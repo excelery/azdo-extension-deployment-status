@@ -1,0 +1,36 @@
+{
+  "contributions": [
+    {
+      "id": "pipeline-settings-menu-action",
+      "type": "ms.vss-web.action",
+      "description": "Choose which environments show on linked work items.",
+      "targets": [
+        "ms.vss-build-web.build-definition-menu"
+      ],
+      "properties": {
+        "text": "Boards Integration",
+        "title": "Report deployment status to Boards",
+        "uri": "dist/PipelineSettings/PipelineSettings.html",
+        "registeredObjectId": "pipeline-settings-menu-action",
+        "order": 35
+      },
+      "constraints": [
+        {
+          "name": "Feature",
+          "properties": {
+            "featureId": "excelery.deployment-status-to-boards.preview"
+          }
+        }
+      ]
+    },
+    {
+      "id": "pipeline-settings-panel",
+      "type": "ms.vss-web.external-content",
+      "description": "Boards Integration settings for a pipeline.",
+      "targets": [],
+      "properties": {
+        "uri": "dist/PipelineSettingsPanel/PipelineSettingsPanel.html"
+      }
+    }
+  ]
+}

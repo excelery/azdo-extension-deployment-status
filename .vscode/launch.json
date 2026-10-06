@@ -1,0 +1,55 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "msedge",
+            "request": "launch",
+            "name": "Debug work item control (dev)",
+            "url": "${input:workItemUrl}",
+            "webRoot": "${workspaceFolder}",
+            "userDataDir": true,
+            "runtimeArgs": [
+                "--no-first-run",
+                "--no-default-browser-check",
+                "--ignore-certificate-errors"
+            ],
+            "sourceMapPathOverrides": {
+                "webpack:///./src/*": "${webRoot}/src/*",
+                "webpack:///src/*": "${webRoot}/src/*"
+            },
+            "preLaunchTask": "start:dev (webpack-dev-server)"
+        },
+        {
+            "type": "msedge",
+            "request": "launch",
+            "name": "Debug pipeline settings panel (dev)",
+            "url": "${input:pipelineUrl}",
+            "webRoot": "${workspaceFolder}",
+            "userDataDir": true,
+            "runtimeArgs": [
+                "--no-first-run",
+                "--no-default-browser-check",
+                "--ignore-certificate-errors"
+            ],
+            "sourceMapPathOverrides": {
+                "webpack:///./src/*": "${webRoot}/src/*",
+                "webpack:///src/*": "${webRoot}/src/*"
+            },
+            "preLaunchTask": "start:dev (webpack-dev-server)"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "workItemUrl",
+            "type": "promptString",
+            "description": "Work item URL with 'Integrated in build' links",
+            "default": "https://dev.azure.com/<org>/<project>/_workitems/edit/<id>"
+        },
+        {
+            "id": "pipelineUrl",
+            "type": "promptString",
+            "description": "Pipeline URL",
+            "default": "https://dev.azure.com/<org>/<project>/_build?definitionId=<id>"
+        }
+    ]
+}

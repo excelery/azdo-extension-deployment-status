@@ -1,0 +1,8 @@
+# Default owner for everything.
+* @excelery
+
+# The read-only promise and the scopes are the product's central commitment;
+# changes here deserve a deliberate look.
+/vss-extension.json  @excelery
+/src/Services/       @excelery
+/PRIVACY.md          @excelery

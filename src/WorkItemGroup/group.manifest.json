@@ -1,0 +1,25 @@
+{
+  "contributions": [
+    {
+      "id": "deployments-work-item-control",
+      "type": "ms.vss-work-web.work-item-form-control",
+      "description": "Shows where this work item has been deployed by YAML pipelines.",
+      "targets": [
+        "ms.vss-work-web.work-item-form"
+      ],
+      "properties": {
+        "name": "Deployment Status for YAML",
+        "uri": "dist/DeploymentsGroup/DeploymentsGroup.html",
+        "height": 220
+      },
+      "constraints": [
+        {
+          "name": "Feature",
+          "properties": {
+            "featureId": "excelery.deployment-status-to-boards.preview"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "azure-devops": {
+      "command": "npx",
+      "args": ["-y", "@azure-devops/mcp", "excelery", "-a", "${ADO_MCP_AUTH:-interactive}"]
+    }
+  }
+}
