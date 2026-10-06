@@ -25,7 +25,12 @@ jobs:
           fetch-depth: 0
 
       - uses: anthropics/claude-code-action@fd1c128679612beff4ca259c78021c506e8aa7a7 # v1
+        id: review
         with:
+          # Dependabot pull requests are reviewed too; a passing review lets
+          # them merge automatically. Dependabot needs the secret under
+          # Settings > Secrets > Dependabot as well.
+          allowed_bots: "dependabot[bot]"
           # Either secret works: an API key bills the Anthropic Console, an
           # OAuth token from `claude setup-token` bills a Claude plan.
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -53,7 +58,19 @@ jobs:
 
             Say so plainly if you find nothing worth raising. Inventing findings
             to look thorough wastes more time than it saves.
+
+            Finally, set `blocking` to true if any finding should stop this pull
+            request from merging, and false otherwise. A failed review blocks
+            automatic merging of Dependabot updates.
           claude_args: |
             --max-turns 20
             --model claude-sonnet-5-5
+            --json-schema '{"type":"object","properties":{"blocking":{"type":"boolean"}},"required":["blocking"]}'
             --allowedTools "Read,Grep,Glob,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),mcp__github_inline_comment__create_inline_comment"
+
+      - name: Fail on blocking findings
+        env:
+          RESULT: ${{ steps.review.outputs.structured_output }}
+        run: |
+          echo "$RESULT"
+          test "$(echo "$RESULT" | jq -r .blocking)" = "false"
