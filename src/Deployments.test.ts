@@ -4,7 +4,7 @@ import { DeploymentRecord, PipelineConfig, mappingFor } from "./Contracts";
 import {
     byMostRecent,
     configsByPipeline,
-    otherProjects,
+    pipelinesOfBuilds,
     relevantConfigs,
     groupDeployments,
     mappedEnvironments,
@@ -433,8 +433,15 @@ describe("relevantConfigs", () => {
         expect(Array.from(kept.keys()).sort()).toEqual(["other-2", "work-1"]);
     });
 
-    it("lists the other projects with reporting turned on, to look the linked runs up in", () => {
-        expect(otherProjects(configs, "work")).toEqual(["other"]);
+    it("keys each linked run's pipeline by the run's own project", () => {
+        const keys = pipelinesOfBuilds([
+            { id: 96121, project: { id: "other" }, definition: { id: 935 } },
+            { id: 100, project: { id: "work" }, definition: { id: 1 } },
+            { id: 101, project: { id: "work" }, definition: { id: 1 } },
+            { id: 102 },
+        ]);
+
+        expect(Array.from(keys).sort()).toEqual(["other-935", "work-1"]);
     });
 
     it("skips configs saved without a project", () => {
