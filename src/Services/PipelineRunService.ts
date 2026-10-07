@@ -1,6 +1,13 @@
 import AzdoClient from "./AzdoClient";
 import { DeploymentRecord } from "../Contracts";
-import { EnvironmentSummary, RawDeploymentRecord, olderThanRuns, pipelineKey, toDeploymentRecords } from "../Deployments";
+import {
+    EnvironmentSummary,
+    LinkedBuild,
+    RawDeploymentRecord,
+    olderThanRuns,
+    pipelinesOfBuilds,
+    toDeploymentRecords,
+} from "../Deployments";
 
 export { EnvironmentSummary } from "../Deployments";
 
@@ -12,8 +19,8 @@ interface EnvironmentInstance {
 const PAGE_SIZE = 200;
 /** Bounds the requests one environment can cost: 10 pages is 2,000 deployments. */
 const MAX_PAGES = 10;
-/** Keeps the build lookup to one request per project. */
-const MAX_RUN_IDS = 200;
+/** Run ids per build lookup request, to keep the URL short. */
+const RUN_IDS_PER_REQUEST = 200;
 
 class PipelineRunService {
     private environments: Promise<EnvironmentSummary[]> | undefined;
@@ -88,35 +95,26 @@ class PipelineRunService {
     }
 
     /**
-     * The pipelines, as `<projectId>-<definitionId>` keys, that built any of the runs in the given
-     * projects. One request per project; a project the user cannot read is skipped.
+     * The pipelines, as `<projectId>-<definitionId>` keys, that built the linked runs. Listing builds
+     * by id through the work item's project also returns runs from other projects, each with its
+     * own project id; getting a single build by id does not. A run that is not returned is simply
+     * not resolved, which never hides deployments found through the work item's own project.
      */
-    public async pipelinesOfRuns(projectIds: string[], runIds: number[]): Promise<Set<string>> {
-        const pipelines = new Set<string>();
-        if (!projectIds.length || !runIds.length) {
-            return pipelines;
+    public async pipelinesOfRuns(runIds: number[]): Promise<Set<string>> {
+        const builds: LinkedBuild[] = [];
+
+        for (let start = 0; start < runIds.length; start += RUN_IDS_PER_REQUEST) {
+            const ids = runIds.slice(start, start + RUN_IDS_PER_REQUEST).join(",");
+            try {
+                const body = await AzdoClient.get<{ value: LinkedBuild[] }>(
+                    `_apis/build/builds?buildIds=${ids}&deletedFilter=includeDeleted`
+                );
+                builds.push(...((body && body.value) || []));
+            } catch {
+            }
         }
 
-        const ids = runIds.slice(0, MAX_RUN_IDS).join(",");
-        await Promise.all(
-            projectIds.map(async (projectId) => {
-                try {
-                    const response = await AzdoClient.getPage<{ value: { definition?: { id: number } }[] }>(
-                        `_apis/build/builds?buildIds=${ids}&deletedFilter=includeDeleted`,
-                        "7.1",
-                        projectId
-                    );
-                    for (const build of (response.body && response.body.value) || []) {
-                        if (build && build.definition) {
-                            pipelines.add(pipelineKey(projectId, build.definition.id));
-                        }
-                    }
-                } catch {
-                }
-            })
-        );
-
-        return pipelines;
+        return pipelinesOfBuilds(builds);
     }
 
     public async environmentsForPipeline(definitionId: number): Promise<EnvironmentSummary[]> {
