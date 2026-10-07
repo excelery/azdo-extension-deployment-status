@@ -55,12 +55,13 @@ class AzdoClient {
         return (await this.getPage<T>(path, apiVersion)).body;
     }
 
-    public async getPage<T>(path: string, apiVersion = "7.1"): Promise<Page<T>> {
-        const [{ baseUrl, project }, accessToken] = await Promise.all([this.getContext(), getAccessToken()]);
+    /** `project` is a project name or id; it defaults to the current project. */
+    public async getPage<T>(path: string, apiVersion = "7.1", project?: string): Promise<Page<T>> {
+        const [context, accessToken] = await Promise.all([this.getContext(), getAccessToken()]);
         const separator = path.indexOf("?") >= 0 ? "&" : "?";
 
         const response = await fetch(
-            `${baseUrl}/${encodeURIComponent(project)}/${path}${separator}api-version=${apiVersion}`,
+            `${context.baseUrl}/${encodeURIComponent(project || context.project)}/${path}${separator}api-version=${apiVersion}`,
             { headers: { Authorization: `Bearer ${accessToken}` } }
         );
 

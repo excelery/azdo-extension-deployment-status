@@ -6,8 +6,8 @@ import {
     IProjectPageService,
 } from "azure-devops-extension-api";
 import { PIPELINE_CONFIG_COLLECTION, PipelineConfig } from "../Contracts";
-import { configsForProject } from "../Deployments";
-import AzdoClient, { getAccessToken } from "./AzdoClient";
+import { configsByPipeline } from "../Deployments";
+import { getAccessToken } from "./AzdoClient";
 
 class PipelineConfigService {
     private dataManager: { manager: Promise<IExtensionDataManager>; token: Promise<string> } | undefined;
@@ -51,12 +51,13 @@ class PipelineConfigService {
         return manager.setDocument(PIPELINE_CONFIG_COLLECTION, config);
     }
 
-    public async getAll(): Promise<Map<number, PipelineConfig>> {
-        const [manager, { projectId }] = await Promise.all([this.getDataManager(), AzdoClient.getContext()]);
+    /** Every project's configs, so pipelines in other projects are reported too. */
+    public async getAll(): Promise<Map<string, PipelineConfig>> {
+        const manager = await this.getDataManager();
 
         try {
             const documents: PipelineConfig[] = await manager.getDocuments(PIPELINE_CONFIG_COLLECTION);
-            return configsForProject(documents, projectId);
+            return configsByPipeline(documents);
         } catch {
             return new Map();
         }

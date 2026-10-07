@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import { DeploymentRecord, PipelineConfig, mappingFor } from "./Contracts";
 import {
     byMostRecent,
-    configsForProject,
+    configsByPipeline,
+    otherProjects,
+    relevantConfigs,
     groupDeployments,
     mappedEnvironments,
     olderThanRuns,
@@ -15,7 +17,7 @@ import {
 
 function config(overrides: Partial<PipelineConfig> = {}): PipelineConfig {
     return {
-        id: "p-1",
+        id: "proj-1",
         definitionId: 1,
         enabled: true,
         environments: {},
@@ -25,6 +27,7 @@ function config(overrides: Partial<PipelineConfig> = {}): PipelineConfig {
 
 function record(overrides: Partial<DeploymentRecord> = {}): DeploymentRecord {
     return {
+        projectId: "proj",
         environmentId: 10,
         recordId: 1,
         environmentName: "prod",
@@ -164,9 +167,9 @@ describe("mappingFor", () => {
 
 describe("mappedEnvironments", () => {
     it("collects enabled, mapped environments across pipelines", () => {
-        const configs = new Map<number, PipelineConfig>([
-            [1, config({ definitionId: 1, environments: { "10": { enabled: true, deploymentType: "production", environmentName: "prod" } } })],
-            [2, config({ id: "p-2", definitionId: 2, environments: { "20": { enabled: true, deploymentType: "development", environmentName: "dev" } } })],
+        const configs = new Map<string, PipelineConfig>([
+            ["proj-1", config({ definitionId: 1, environments: { "10": { enabled: true, deploymentType: "production", environmentName: "prod" } } })],
+            ["proj-2", config({ id: "proj-2", definitionId: 2, environments: { "20": { enabled: true, deploymentType: "development", environmentName: "dev" } } })],
         ]);
 
         expect(mappedEnvironments(configs).map((e) => e.environmentId).sort()).toEqual([10, 20]);
@@ -174,18 +177,18 @@ describe("mappedEnvironments", () => {
 
     it("de-duplicates an environment shared by two pipelines", () => {
         const shared = { enabled: true, deploymentType: "production" as const, environmentName: "prod" };
-        const configs = new Map<number, PipelineConfig>([
-            [1, config({ definitionId: 1, environments: { "10": shared } })],
-            [2, config({ id: "p-2", definitionId: 2, environments: { "10": shared } })],
+        const configs = new Map<string, PipelineConfig>([
+            ["proj-1", config({ definitionId: 1, environments: { "10": shared } })],
+            ["proj-2", config({ id: "proj-2", definitionId: 2, environments: { "10": shared } })],
         ]);
 
         expect(mappedEnvironments(configs)).toHaveLength(1);
     });
 
     it("skips disabled pipelines and unmapped environments", () => {
-        const configs = new Map<number, PipelineConfig>([
-            [1, config({ enabled: false, environments: { "10": { enabled: true, deploymentType: "production" } } })],
-            [2, config({ id: "p-2", definitionId: 2, environments: { "20": { enabled: true, deploymentType: "unmapped" } } })],
+        const configs = new Map<string, PipelineConfig>([
+            ["proj-1", config({ enabled: false, environments: { "10": { enabled: true, deploymentType: "production" } } })],
+            ["proj-2", config({ id: "proj-2", definitionId: 2, environments: { "20": { enabled: true, deploymentType: "unmapped" } } })],
         ]);
 
         expect(mappedEnvironments(configs)).toEqual([]);
@@ -193,9 +196,9 @@ describe("mappedEnvironments", () => {
 });
 
 describe("groupDeployments", () => {
-    const configs = new Map<number, PipelineConfig>([
-        [1, config({ definitionId: 1, environments: { "10": { enabled: true, deploymentType: "production" } } })],
-        [2, config({ id: "p-2", definitionId: 2, environments: { "20": { enabled: true, deploymentType: "development" } } })],
+    const configs = new Map<string, PipelineConfig>([
+        ["proj-1", config({ definitionId: 1, environments: { "10": { enabled: true, deploymentType: "production" } } })],
+        ["proj-2", config({ id: "proj-2", definitionId: 2, environments: { "20": { enabled: true, deploymentType: "development" } } })],
     ]);
 
     it("groups by deployment type", () => {
@@ -279,25 +282,60 @@ describe("relativeTime", () => {
     });
 });
 
-describe("configsForProject", () => {
-    it("keeps only this project's configs, keyed by definition id", () => {
-        const configs = configsForProject(
-            [
-                config({ id: "project-a-5", definitionId: 5 }),
-                config({ id: "project-b-5", definitionId: 5, enabled: false }),
-                config({ id: "project-a-7", definitionId: 7 }),
-            ],
-            "project-a"
-        );
+describe("configsByPipeline", () => {
+    it("keeps every project's configs, keyed by project and definition id", () => {
+        const configs = configsByPipeline([
+            config({ id: "project-a-5", definitionId: 5 }),
+            config({ id: "project-b-5", definitionId: 5, enabled: false }),
+            config({ id: "project-a-7", definitionId: 7 }),
+        ]);
 
-        expect(Array.from(configs.keys()).sort()).toEqual([5, 7]);
-        expect(configs.get(5)!.id).toBe("project-a-5");
+        expect(Array.from(configs.keys()).sort()).toEqual(["project-a-5", "project-a-7", "project-b-5"]);
+        expect(configs.get("project-b-5")!.enabled).toBe(false);
     });
 
-    it("does not match a project id that is a prefix of another", () => {
-        const configs = configsForProject([config({ id: "project-ab-5", definitionId: 5 })], "project-a");
+    it("skips documents whose id does not end with their definition id", () => {
+        const configs = configsByPipeline([
+            config({ id: "project-a-6", definitionId: 5 }),
+            config({ id: "-5", definitionId: 5 }),
+        ]);
 
         expect(configs.size).toBe(0);
+    });
+});
+
+describe("pipelines in other projects", () => {
+    const configs = configsByPipeline([
+        config({ id: "work-1", definitionId: 1, environments: { "10": { enabled: true, deploymentType: "development" } } }),
+        config({ id: "other-1", definitionId: 1, environments: { "10": { enabled: true, deploymentType: "production" } } }),
+    ]);
+
+    it("reads each mapped environment from its own project", () => {
+        const environments = mappedEnvironments(configs).map((e) => `${e.projectId}:${e.environmentId}`).sort();
+
+        expect(environments).toEqual(["other:10", "work:10"]);
+    });
+
+    it("stamps the environment's project onto each record", () => {
+        const [out] = toDeploymentRecords(
+            { projectId: "other", environmentId: 10, environmentName: "prod" },
+            [{ definition: { id: 1, name: "P" }, owner: { id: 100, name: "1" } }],
+            [100]
+        );
+
+        expect(out.projectId).toBe("other");
+    });
+
+    it("keeps pipelines with the same definition id in different projects apart", () => {
+        const groups = groupDeployments(
+            [record({ projectId: "work", runId: 100 }), record({ projectId: "other", runId: 200 })],
+            configs
+        );
+
+        expect(groups.map((g) => [g.deploymentType, g.pipelines[0].projectId]).sort()).toEqual([
+            ["development", "work"],
+            ["production", "other"],
+        ]);
     });
 });
 
@@ -333,7 +371,7 @@ describe("unfinished deployments", () => {
         const finished = record({ runId: 100, finishTime: "2026-09-01T12:00:00Z" });
         const running = record({ runId: 101, finishTime: "", result: "inProgress" });
         const configs = new Map([
-            [1, config({ environments: { "10": { enabled: true, deploymentType: "production" } } })],
+            ["proj-1", config({ environments: { "10": { enabled: true, deploymentType: "production" } } })],
         ]);
 
         for (const records of [[finished, running], [running, finished]]) {
@@ -380,3 +418,27 @@ describe("record id", () => {
         expect(withoutId.recordId).toBe(0);
     });
 });
+
+describe("relevantConfigs", () => {
+    const configs = configsByPipeline([
+        config({ id: "work-1", definitionId: 1 }),
+        config({ id: "other-1", definitionId: 1 }),
+        config({ id: "other-2", definitionId: 2 }),
+        config({ id: "third-3", definitionId: 3, enabled: false }),
+    ]);
+
+    it("keeps the work item's project, and other projects only for pipelines that built a linked run", () => {
+        const kept = relevantConfigs(configs, "work", new Set(["other-2"]));
+
+        expect(Array.from(kept.keys()).sort()).toEqual(["other-2", "work-1"]);
+    });
+
+    it("lists the other projects with reporting turned on, to look the linked runs up in", () => {
+        expect(otherProjects(configs, "work")).toEqual(["other"]);
+    });
+
+    it("skips configs saved without a project", () => {
+        expect(configsByPipeline([config({ id: "unknown-1", definitionId: 1 })]).size).toBe(0);
+    });
+});
+
