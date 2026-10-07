@@ -78,7 +78,10 @@ jobs:
             ${{ if ne(parameters.environment, 'prod') }}:
               extensionTag: '-${{ parameters.environment }}'
               extensionName: '$(extensionName) (${{ parameters.environment }})'
-              shareWith: '$(shareWith)'
+              ${{ if eq(parameters.environment, 'test') }}:
+                shareWith: '$(testShareWith)'
+              ${{ if ne(parameters.environment, 'test') }}:
+                shareWith: '$(shareWith)'
             ${{ if eq(parameters.environment, 'prod') }}:
               extensionName: '$(extensionName)'
             extensionVersion: '$(Build.BuildNumber)'

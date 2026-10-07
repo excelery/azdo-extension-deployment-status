@@ -5,5 +5,8 @@ variables:
   sourceDir: $(Build.SourcesDirectory)
   serviceConnection: spn-azdo-marketplace-publish
   shareWith: 'excelery'
+  # Test can be shared with more organizations through the pipeline variable
+  # testShareWithOrgs (comma-separated), set in Azure DevOps rather than here.
+  testShareWith: $[ coalesce(variables['testShareWithOrgs'], 'excelery') ]
   majorVersion: 0
   minorVersion: 2
