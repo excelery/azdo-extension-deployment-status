@@ -13,7 +13,8 @@ body {
 .dsb-root {
   box-sizing: border-box;
   font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 12px;
+  /* Same size as the links in the built-in sections around it. */
+  font-size: 14px;
   color: rgba(var(--palette-neutral-100, 0, 0, 0), 0.9);
   padding: 4px 0 8px 0;
   width: 100%;
@@ -44,6 +45,7 @@ body {
 }
 
 .dsb-group-title {
+  font-size: 12px;
   font-weight: 600;
   margin-bottom: 6px;
 }
@@ -76,6 +78,9 @@ body {
 }
 
 .dsb-pipeline-name {
+  /* Only the name is the link, not the whole row width. */
+  align-self: flex-start;
+  max-width: 100%;
   color: var(--communication-foreground, #0078d4);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -84,6 +89,7 @@ body {
 
 .dsb-pipeline-subtitle {
   color: rgba(var(--palette-neutral-100, 0, 0, 0), 0.55);
+  font-size: 12px;
 }
 
 .dsb-status {
