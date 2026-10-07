@@ -56,8 +56,8 @@ CI does this: `.azure-pipelines/build.yml` runs tests, builds and packages both 
 `deploy.yml` publishes to Azure DevOps environments `deployment-status-<env>`:
 
 - **dev** (`<id>-dev`): every branch, private to the `excelery` org. Loads code from `localhost:3000`.
-- **test** (`<id>-test`): every branch, private to the org, after approval on the test environment. The real build.
-- **prod** (`<id>`): `main` only, after test and approval on the prod environment. Public, marked Preview.
+- **test** (`<id>-test`): every branch, private, after approval on the test environment, shared with `testShareWithOrgs`. The real build.
+- **prod** (`<id>`): `main` only, after test and approval on the prod environment. Private, marked Preview, shared with `prodShareWithOrgs`.
 
 After each publish, `IsAzureDevOpsExtensionValid@5` waits for Marketplace validation, using the same
 service connection.
