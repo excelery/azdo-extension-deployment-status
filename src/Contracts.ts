@@ -30,6 +30,8 @@ export interface PipelineConfig {
 export const PIPELINE_CONFIG_COLLECTION = "PipelineConfigs";
 
 export interface DeploymentRecord {
+    /** The project the pipeline and environment belong to. */
+    projectId: string;
     environmentId: number;
     /** Environment deployment record id; 0 when unknown. */
     recordId: number;

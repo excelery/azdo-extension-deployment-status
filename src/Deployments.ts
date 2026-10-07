@@ -7,6 +7,7 @@ import {
 } from "./Contracts";
 
 export interface PipelineDeployments {
+    projectId: string;
     definitionId: number;
     pipelineName: string;
     latest: DeploymentRecord;
@@ -34,6 +35,8 @@ export interface RawDeploymentRecord {
 }
 
 export interface EnvironmentSummary {
+    /** The project the environment belongs to; omitted means the current project. */
+    projectId?: string;
     environmentId: number;
     environmentName: string;
 }
@@ -71,22 +74,30 @@ export function byMostRecent(a: DeploymentRecord, b: DeploymentRecord): number {
     return b.runId - a.runId;
 }
 
+/** Identifies a pipeline across the organization, since definition ids are only unique per project. */
+export function pipelineKey(projectId: string, definitionId: number): string {
+    return `${projectId}-${definitionId}`;
+}
+
+/** The project a config belongs to, from its `<projectId>-<definitionId>` document id. */
+export function projectIdOf(config: PipelineConfig): string {
+    const suffix = `-${config.definitionId}`;
+    return config.id.endsWith(suffix) ? config.id.slice(0, -suffix.length) : "";
+}
+
 /**
- * Extension data is shared across the organization, and definition ids are only unique within a
- * project, so configs are filtered by the `<projectId>-` document id prefix before keying them.
+ * Extension data is shared across the organization. Every project's configs are kept, keyed by
+ * their `<projectId>-<definitionId>` document id, so a work item can show deployments from
+ * pipelines in other projects.
  */
-export function configsForProject(documents: PipelineConfig[], projectId: string): Map<number, PipelineConfig> {
-    const prefix = `${projectId}-`;
-    const configs = new Map<number, PipelineConfig>();
+export function configsByPipeline(documents: PipelineConfig[]): Map<string, PipelineConfig> {
+    const configs = new Map<string, PipelineConfig>();
 
     for (const document of documents || []) {
-        if (!document || typeof document.id !== "string" || !document.id.startsWith(prefix)) {
+        if (!document || typeof document.id !== "string" || !projectIdOf(document)) {
             continue;
         }
-        if (document.id.slice(prefix.length) !== String(document.definitionId)) {
-            continue;
-        }
-        configs.set(document.definitionId, document);
+        configs.set(document.id, document);
     }
 
     return configs;
@@ -134,6 +145,7 @@ export function toDeploymentRecords(
     return (raw || [])
         .filter((record) => !!record && !!record.owner && !!record.definition && wanted.has(record.owner.id))
         .map((record) => ({
+            projectId: environment.projectId || "",
             environmentId: environment.environmentId,
             recordId: record.id || 0,
             environmentName: environment.environmentName,
@@ -147,19 +159,22 @@ export function toDeploymentRecords(
         }));
 }
 
-export function mappedEnvironments(configs: Map<number, PipelineConfig>): EnvironmentSummary[] {
-    const mapped = new Map<number, EnvironmentSummary>();
+export function mappedEnvironments(configs: Map<string, PipelineConfig>): EnvironmentSummary[] {
+    const mapped = new Map<string, EnvironmentSummary>();
 
     configs.forEach((config) => {
         if (!config || !config.enabled || !config.environments) {
             return;
         }
+        const projectId = projectIdOf(config);
         for (const id of Object.keys(config.environments)) {
             const mapping = config.environments[id];
             if (!mapping.enabled || mapping.deploymentType === "unmapped") {
                 continue;
             }
-            mapped.set(Number(id), {
+            // Environment ids are only unique within a project.
+            mapped.set(`${projectId}:${id}`, {
+                projectId,
                 environmentId: Number(id),
                 environmentName: mapping.environmentName || "",
             });
@@ -171,12 +186,13 @@ export function mappedEnvironments(configs: Map<number, PipelineConfig>): Enviro
 
 export function groupDeployments(
     records: DeploymentRecord[],
-    configs: Map<number, PipelineConfig>
+    configs: Map<string, PipelineConfig>
 ): GroupedDeployments[] {
-    const byType = new Map<DeploymentType, Map<number, DeploymentRecord[]>>();
+    const byType = new Map<DeploymentType, Map<string, DeploymentRecord[]>>();
 
     for (const record of records) {
-        const mapping = mappingFor(configs.get(record.definitionId), record.environmentId);
+        const key = pipelineKey(record.projectId, record.definitionId);
+        const mapping = mappingFor(configs.get(key), record.environmentId);
         if (!mapping) {
             continue;
         }
@@ -185,10 +201,10 @@ export function groupDeployments(
             byType.set(mapping.deploymentType, new Map());
         }
         const byPipeline = byType.get(mapping.deploymentType)!;
-        if (!byPipeline.has(record.definitionId)) {
-            byPipeline.set(record.definitionId, []);
+        if (!byPipeline.has(key)) {
+            byPipeline.set(key, []);
         }
-        byPipeline.get(record.definitionId)!.push(record);
+        byPipeline.get(key)!.push(record);
     }
 
     const groups: GroupedDeployments[] = [];
@@ -196,12 +212,13 @@ export function groupDeployments(
     byType.forEach((byPipeline, deploymentType) => {
         const pipelines: PipelineDeployments[] = [];
 
-        byPipeline.forEach((pipelineRecords, definitionId) => {
+        byPipeline.forEach((pipelineRecords) => {
             const history = pipelineRecords
                 .slice()
                 .sort(byMostRecent);
             pipelines.push({
-                definitionId,
+                projectId: history[0].projectId,
+                definitionId: history[0].definitionId,
                 pipelineName: history[0].pipelineName,
                 latest: history[0],
                 history,

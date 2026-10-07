@@ -36,7 +36,7 @@ class PipelineRunService {
      * cannot matter, the records run out, or MAX_PAGES is reached.
      */
     private async recordsOf(
-        environmentId: number,
+        environment: EnvironmentSummary,
         enough: (page: RawDeploymentRecord[]) => boolean
     ): Promise<RawDeploymentRecord[]> {
         const records: RawDeploymentRecord[] = [];
@@ -46,8 +46,9 @@ class PipelineRunService {
             for (let page = 0; page < MAX_PAGES; page++) {
                 const token = continuationToken ? `&continuationToken=${encodeURIComponent(continuationToken)}` : "";
                 const response = await AzdoClient.getPage<{ value: RawDeploymentRecord[] }>(
-                    `_apis/pipelines/environments/${environmentId}/environmentdeploymentrecords?top=${PAGE_SIZE}${token}`,
-                    "7.2-preview.1"
+                    `_apis/pipelines/environments/${environment.environmentId}/environmentdeploymentrecords?top=${PAGE_SIZE}${token}`,
+                    "7.2-preview.1",
+                    environment.projectId
                 );
                 const value = (response.body && response.body.value) || [];
                 records.push(...value);
@@ -75,7 +76,7 @@ class PipelineRunService {
             environments.map(async (environment) =>
                 toDeploymentRecords(
                     environment,
-                    await this.recordsOf(environment.environmentId, (page) => olderThanRuns(page, runIds)),
+                    await this.recordsOf(environment, (page) => olderThanRuns(page, runIds)),
                     runIds
                 )
             )
@@ -91,7 +92,7 @@ class PipelineRunService {
             environments.map(async (environment) => {
                 const isThisPipeline = (record: RawDeploymentRecord) =>
                     !!record.definition && record.definition.id === definitionId;
-                const records = await this.recordsOf(environment.environmentId, (page) =>
+                const records = await this.recordsOf(environment, (page) =>
                     page.some(isThisPipeline)
                 );
                 const deploys = records.some(isThisPipeline);

@@ -20,9 +20,8 @@ import "./DeploymentsGroup.scss";
 
 interface Urls {
     pipelines: string;
-    run(runId: number): string;
     deployment(record: DeploymentRecord): string;
-    pipeline(definitionId: number): string;
+    pipeline(pipeline: PipelineDeployments): string;
 }
 
 type Status = "succeeded" | "failed" | "neutral" | "inProgress";
@@ -95,7 +94,7 @@ function PipelineRow(props: { pipeline: PipelineDeployments; urls: Urls }): JSX.
                 <span className="dsb-pipeline-text">
                     <a
                         className="dsb-pipeline-name"
-                        href={urls.pipeline(pipeline.definitionId)}
+                        href={urls.pipeline(pipeline)}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(event) => event.stopPropagation()}
@@ -256,21 +255,21 @@ function DeploymentsGroup(): JSX.Element {
             }
 
             const { baseUrl, project } = await AzdoClient.getContext();
-            const base = `${baseUrl}/${encodeURIComponent(project)}`;
+            // Pipelines can live in another project; its id works in place of its name.
+            const base = (projectId: string) => `${baseUrl}/${encodeURIComponent(projectId || project)}`;
 
             if (!disposed) {
                 setUrls({
-                    pipelines: `${base}/_build`,
-                    run: (runId) => `${base}/_build/results?buildId=${runId}&view=results`,
+                    pipelines: `${base("")}/_build`,
                     // The environment's view of this deployment, the YAML equivalent of a
                     // Classic release stage. Falls back to the run when the record id is missing.
                     deployment: (record) =>
                         record.recordId
-                            ? `${base}/_environments/${record.environmentId}/runs` +
+                            ? `${base(record.projectId)}/_environments/${record.environmentId}/runs` +
                               `?environmentExecutionRecordId=${record.recordId}&ownerId=${record.runId}` +
                               `&definitionId=${record.definitionId}&planType=Build&view=jobshistory`
-                            : `${base}/_build/results?buildId=${record.runId}&view=results`,
-                    pipeline: (definitionId) => `${base}/_build?definitionId=${definitionId}`,
+                            : `${base(record.projectId)}/_build/results?buildId=${record.runId}&view=results`,
+                    pipeline: (pipeline) => `${base(pipeline.projectId)}/_build?definitionId=${pipeline.definitionId}`,
                 });
             }
 
@@ -319,7 +318,7 @@ function DeploymentsGroup(): JSX.Element {
                 <div className="dsb-group" key={group.deploymentType}>
                     <div className="dsb-group-title">{DEPLOYMENT_TYPE_LABELS[group.deploymentType]}</div>
                     {group.pipelines.map((pipeline) => (
-                        <PipelineRow key={pipeline.definitionId} pipeline={pipeline} urls={urls} />
+                        <PipelineRow key={`${pipeline.projectId}-${pipeline.definitionId}`} pipeline={pipeline} urls={urls} />
                     ))}
                 </div>
             ))}
