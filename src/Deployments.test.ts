@@ -4,6 +4,8 @@ import { DeploymentRecord, PipelineConfig, mappingFor } from "./Contracts";
 import {
     byMostRecent,
     configsByPipeline,
+    otherProjects,
+    relevantConfigs,
     groupDeployments,
     mappedEnvironments,
     olderThanRuns,
@@ -416,3 +418,27 @@ describe("record id", () => {
         expect(withoutId.recordId).toBe(0);
     });
 });
+
+describe("relevantConfigs", () => {
+    const configs = configsByPipeline([
+        config({ id: "work-1", definitionId: 1 }),
+        config({ id: "other-1", definitionId: 1 }),
+        config({ id: "other-2", definitionId: 2 }),
+        config({ id: "third-3", definitionId: 3, enabled: false }),
+    ]);
+
+    it("keeps the work item's project, and other projects only for pipelines that built a linked run", () => {
+        const kept = relevantConfigs(configs, "work", new Set(["other-2"]));
+
+        expect(Array.from(kept.keys()).sort()).toEqual(["other-2", "work-1"]);
+    });
+
+    it("lists the other projects with reporting turned on, to look the linked runs up in", () => {
+        expect(otherProjects(configs, "work")).toEqual(["other"]);
+    });
+
+    it("skips configs saved without a project", () => {
+        expect(configsByPipeline([config({ id: "unknown-1", definitionId: 1 })]).size).toBe(0);
+    });
+});
+

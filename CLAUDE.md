@@ -87,7 +87,10 @@ one on the default branch, so it cannot review the pull request that introduces 
 - **The pipeline can live in another project than the work item.** Definition and environment ids
   are only unique per project, so configs are keyed `<projectId>-<definitionId>` (the document id),
   environment records are read from the config's project, and links use the record's project id.
-  Scoping anything to the work item's project hides cross-project deployments.
+  Scoping anything to the work item's project hides cross-project deployments. To keep the request
+  count bounded, other projects are queried only for the pipelines that built a linked run (one
+  `build/builds?buildIds=` call per configured project); the work item's own project is always queried,
+  which also covers runs deleted by retention.
 - **Deployments come from environment deployment records, not build timelines.** Records outlive the
   runs they describe: in a real project, 70 of 110 referenced runs had been deleted by retention while
   every record survived, and `getBuildTimeline` 404s for exactly those. Reading timelines made

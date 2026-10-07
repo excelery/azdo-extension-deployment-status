@@ -94,13 +94,46 @@ export function configsByPipeline(documents: PipelineConfig[]): Map<string, Pipe
     const configs = new Map<string, PipelineConfig>();
 
     for (const document of documents || []) {
-        if (!document || typeof document.id !== "string" || !projectIdOf(document)) {
+        const projectId = document && typeof document.id === "string" ? projectIdOf(document) : "";
+        // Settings saved outside a project fall back to an "unknown" project id.
+        if (!projectId || projectId === "unknown") {
             continue;
         }
         configs.set(document.id, document);
     }
 
     return configs;
+}
+
+/** Projects other than the work item's that have reporting turned on for at least one pipeline. */
+export function otherProjects(configs: Map<string, PipelineConfig>, currentProjectId: string): string[] {
+    const projects = new Set<string>();
+    configs.forEach((config) => {
+        const projectId = projectIdOf(config);
+        if (config.enabled && projectId !== currentProjectId) {
+            projects.add(projectId);
+        }
+    });
+    return Array.from(projects).sort();
+}
+
+/**
+ * The configs worth querying for a work item. The work item's own project is always kept, which
+ * also covers runs deleted by retention. Other projects are kept only for the pipelines that built
+ * one of the linked runs, so the request count does not grow with the organization.
+ */
+export function relevantConfigs(
+    configs: Map<string, PipelineConfig>,
+    currentProjectId: string,
+    linkedPipelines: Set<string>
+): Map<string, PipelineConfig> {
+    const relevant = new Map<string, PipelineConfig>();
+    configs.forEach((config, key) => {
+        if (projectIdOf(config) === currentProjectId || linkedPipelines.has(key)) {
+            relevant.set(key, config);
+        }
+    });
+    return relevant;
 }
 
 /**

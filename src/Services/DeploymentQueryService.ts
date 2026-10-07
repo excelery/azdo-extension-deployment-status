@@ -5,8 +5,11 @@ import {
     GroupedDeployments,
     groupDeployments,
     mappedEnvironments,
+    otherProjects,
+    relevantConfigs,
     runIdsFromRelations,
 } from "../Deployments";
+import AzdoClient from "./AzdoClient";
 import PipelineRunService from "./PipelineRunService";
 import PipelineConfigService from "./PipelineConfigService";
 
@@ -35,7 +38,12 @@ class DeploymentQueryService {
             return { groups: [], noBuildLinks: true };
         }
 
-        const configs = await configsPromise;
+        const [allConfigs, { projectId }] = await Promise.all([configsPromise, AzdoClient.getContext()]);
+        const linkedPipelines = await PipelineRunService.pipelinesOfRuns(
+            otherProjects(allConfigs, projectId),
+            runIds
+        );
+        const configs = relevantConfigs(allConfigs, projectId, linkedPipelines);
         const environments = mappedEnvironments(configs);
 
         if (!environments.length) {
