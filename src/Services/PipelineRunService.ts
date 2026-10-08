@@ -132,6 +132,47 @@ class PipelineRunService {
         return ((body && body.value) || []).map((item) => Number(item.id));
     }
 
+    private repositories = new Map<string, Promise<string | undefined>>();
+
+    /** The repository a pipeline builds, read from its definition in its own project. */
+    public repositoryOf(projectId: string, definitionId: number): Promise<string | undefined> {
+        const key = `${projectId}-${definitionId}`;
+        if (!this.repositories.has(key)) {
+            this.repositories.set(
+                key,
+                AzdoClient.get<{ repository?: { id?: string } }>(
+                    `_apis/build/definitions/${definitionId}`,
+                    "7.1",
+                    projectId
+                ).then((body) => (body && body.repository && body.repository.id ? body.repository.id.toLowerCase() : undefined))
+            );
+        }
+        return this.repositories.get(key)!;
+    }
+
+    /**
+     * The source branch of each run. Listing builds by id through any project also returns runs
+     * from other projects, and deleted runs while they are still recoverable.
+     */
+    public async branchesOf(runIds: number[]): Promise<Map<number, string>> {
+        const branches = new Map<number, string>();
+        for (let start = 0; start < runIds.length; start += RUN_IDS_PER_REQUEST) {
+            const ids = runIds.slice(start, start + RUN_IDS_PER_REQUEST).join(",");
+            try {
+                const body = await AzdoClient.get<{ value: LinkedBuild[] }>(
+                    `_apis/build/builds?buildIds=${ids}&deletedFilter=includeDeleted`
+                );
+                for (const build of (body && body.value) || []) {
+                    if (build && build.sourceBranch) {
+                        branches.set(build.id, build.sourceBranch);
+                    }
+                }
+            } catch {
+            }
+        }
+        return branches;
+    }
+
     public async environmentsForPipeline(definitionId: number): Promise<EnvironmentSummary[]> {
         const environments = await this.listEnvironments();
 

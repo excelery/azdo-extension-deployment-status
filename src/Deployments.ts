@@ -108,6 +108,7 @@ export function configsByPipeline(documents: PipelineConfig[]): Map<string, Pipe
 
 export interface LinkedBuild {
     id: number;
+    sourceBranch?: string;
     project?: { id: string };
     definition?: { id: number };
 }

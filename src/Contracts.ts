@@ -21,6 +21,8 @@ export interface EnvironmentMapping {
 export interface PipelineConfig {
     id: string;
     definitionId: number;
+    /** The repository the pipeline builds, so work items can be matched to it by their code links. */
+    repositoryId?: string;
     enabled: boolean;
     /** Keyed by environment id. */
     environments: Record<string, EnvironmentMapping>;

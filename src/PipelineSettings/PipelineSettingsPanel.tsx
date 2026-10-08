@@ -15,6 +15,7 @@ import {
     EnvironmentMapping,
     PipelineConfig,
 } from "../Contracts";
+import AzdoClient from "../Services/AzdoClient";
 import PipelineRunService, { EnvironmentSummary } from "../Services/PipelineRunService";
 import PipelineConfigService from "../Services/PipelineConfigService";
 
@@ -111,9 +112,14 @@ function PipelineSettingsPanel(): JSX.Element {
                 }
             }
 
+            const { projectId } = await AzdoClient.getContext();
+            const repositoryId = await PipelineRunService.repositoryOf(projectId, definitionId).catch(
+                () => config.repositoryId
+            );
             const saved = await PipelineConfigService.save({
                 ...config,
                 definitionId,
+                repositoryId,
                 environments: stamped,
             });
             setConfig(saved);

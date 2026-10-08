@@ -2,7 +2,7 @@ import * as SDK from "azure-devops-extension-sdk";
 import { IWorkItemFormService, WorkItemTrackingServiceIds } from "azure-devops-extension-api/WorkItemTracking";
 
 import { GroupedDeployments, groupDeployments } from "../Deployments";
-import { commitLinksFromRelations } from "../EnvironmentLookup";
+import { codeLinksFromRelations } from "../EnvironmentLookup";
 import EnvironmentLookupService from "./EnvironmentLookupService";
 import PipelineConfigService from "./PipelineConfigService";
 
@@ -10,7 +10,7 @@ export { GroupedDeployments, PipelineDeployments } from "../Deployments";
 
 export interface DeploymentsResult {
     groups: GroupedDeployments[];
-    /** The work item has no commit links, so there is nothing to look deployments up by. */
+    /** The work item has no commit, pull request or branch links, so nothing ties it to a run. */
     noBuildLinks: boolean;
 }
 
@@ -23,7 +23,7 @@ class DeploymentQueryService {
         );
         const [relations, workItemId] = await Promise.all([formService.getWorkItemRelations(), formService.getId()]);
 
-        if (!commitLinksFromRelations(relations as any).length) {
+        if (!codeLinksFromRelations(relations as any).length) {
             configsPromise.catch(() => undefined);
             return { groups: [], noBuildLinks: true };
         }
