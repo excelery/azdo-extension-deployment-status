@@ -40,6 +40,9 @@ class TraceabilityService {
             }
         });
 
+        // Diagnostic for the dev test.
+        console.info(LOG, "work item", workItemId, "created", new Date(createdAt).toISOString(), "projects", Array.from(projects), "configs", Array.from(configs.keys()), "relevant", Array.from(relevant.keys()), "environments", mappedEnvironments(relevant));
+
         const perEnvironment = await Promise.all(
             mappedEnvironments(relevant).map((environment) =>
                 this.deploymentsIn(environment, workItemId, createdAt, relevant).catch((error) => {
@@ -60,12 +63,18 @@ class TraceabilityService {
         const projectId = environment.projectId || "";
         const records = await PipelineRunService.recordsOf(environment, (page) => reachedBefore(page, createdAt));
 
+        // Diagnostic for the dev test.
+        console.info(LOG, "environment", environment.environmentId, "records", records.length, "pipelines", pipelinesIn(records), records.slice(0, 3));
+
         const found: DeploymentRecord[] = [];
         for (const definitionId of pipelinesIn(records)) {
             // Only pipelines whose Boards Integration settings map this environment.
             if (!mappingFor(configs.get(pipelineKey(projectId, definitionId)), environment.environmentId)) {
                 continue;
             }
+
+            // Diagnostic for the dev test.
+            console.info(LOG, "environment", environment.environmentId, "pipeline", definitionId, "deployments since created", deploymentsSince(records, definitionId, createdAt).map((record) => record.id));
 
             let brought: RawDeploymentRecord | undefined;
             for (const record of deploymentsSince(records, definitionId, createdAt)) {

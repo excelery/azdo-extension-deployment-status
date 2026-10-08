@@ -67,7 +67,9 @@ class PipelineRunService {
                     break;
                 }
             }
-        } catch {
+        } catch (error: any) {
+            // Diagnostic for the dev test.
+            console.warn("[Deployment Status]", "environment", environment.environmentId, "records failed:", error && error.message);
         }
 
         return records;
