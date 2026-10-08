@@ -18,7 +18,10 @@ import {
 import { WorkItemRelation } from "../Deployments";
 import AzdoClient from "./AzdoClient";
 
-/** Bounds the build listing per repository and project: 3 pages is 3,000 runs. */
+/**
+ * Bounds the build listing per repository and project: 3 pages is 3,000 runs. Runs are listed newest
+ * first, so a cut drops the oldest, completed runs, which build links cover, never a run in progress.
+ */
 const BUILD_PAGE_SIZE = 1000;
 const MAX_BUILD_PAGES = 3;
 /** Ancestry checks in flight at once. */
@@ -113,7 +116,7 @@ class CommitRunService {
         }).catch(() => undefined);
     }
 
-    /** Runs of the given pipelines built from the repository, queued from `since` on, finished or not. */
+    /** Runs of the given pipelines built from the repository, queued from `since` on, finished or not, newest first. */
     private async buildsOf(
         projectId: string,
         repositoryId: string,
@@ -129,7 +132,7 @@ class CommitRunService {
                 const response = await AzdoClient.getPage<{ value: RepositoryBuild[] }>(
                     `_apis/build/builds?repositoryId=${repositoryId}&repositoryType=TfsGit` +
                         `&definitions=${definitionIds.join(",")}&minTime=${encodeURIComponent(since)}` +
-                        `&queryOrder=queueTimeAscending&$top=${BUILD_PAGE_SIZE}${token}`,
+                        `&queryOrder=queueTimeDescending&$top=${BUILD_PAGE_SIZE}${token}`,
                     "7.1",
                     projectId
                 );
