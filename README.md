@@ -13,8 +13,6 @@ Runs are found in two ways:
 
 This is needed because Integrated in build links are only added when a run completes.
 
-A stage waiting for an approval is shown as Waiting for approval, in the environment it last deployed to.
-
 The extension does not write data to work items; it only reads existing links. Uninstalling it will not affect your work items or any existing data.
 
 ![Deployment section on a work item](static/screenshots/work-item.png)
