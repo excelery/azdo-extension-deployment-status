@@ -24,64 +24,78 @@ interface Urls {
     pipeline(pipeline: PipelineDeployments): string;
 }
 
-type Status = "succeeded" | "failed" | "neutral" | "inProgress" | "waiting";
+/**
+ * The Azure DevOps status icons, as `azure-devops-ui`'s `Status` draws them at size m. Copied
+ * inline: importing `Status` pulls in the library's core styles and tooltip, which this bundle
+ * avoids (see CLAUDE.md).
+ */
+type Icon = "success" | "warning" | "failed" | "running" | "waiting" | "queued" | "canceled" | "skipped";
 
-const STATUS: Record<DeploymentRecord["result"], { status: Status; label: string }> = {
-    succeeded: { status: "succeeded", label: "Succeeded" },
-    partiallySucceeded: { status: "succeeded", label: "Partially succeeded" },
-    failed: { status: "failed", label: "Failed" },
-    canceled: { status: "neutral", label: "Canceled" },
-    skipped: { status: "neutral", label: "Skipped" },
-    inProgress: { status: "inProgress", label: "In progress" },
-    waitingForApproval: { status: "waiting", label: "Waiting for approval" },
-    unknown: { status: "neutral", label: "Unknown" },
+const STATUS: Record<DeploymentRecord["result"], { icon: Icon; label: string }> = {
+    succeeded: { icon: "success", label: "Succeeded" },
+    partiallySucceeded: { icon: "warning", label: "Partially succeeded" },
+    failed: { icon: "failed", label: "Failed" },
+    canceled: { icon: "canceled", label: "Canceled" },
+    skipped: { icon: "skipped", label: "Skipped" },
+    inProgress: { icon: "running", label: "In progress" },
+    waitingForApproval: { icon: "waiting", label: "Waiting for approval" },
+    unknown: { icon: "queued", label: "Unknown" },
 };
 
-const ICON_FILL: Record<Status, string> = {
-    succeeded: "#107C10",
-    failed: "#CD4A45",
-    neutral: "#8A8886",
-    inProgress: "#0078D4",
-    waiting: "#0078D4",
-};
+/** Azure DevOps' status colors, through the theme's variables. */
+const SUCCESS = "var(--component-status-success, rgba(85, 163, 98, 1))";
+const ERROR = "var(--component-status-error, rgba(205, 74, 69, 1))";
+const WARNING = "var(--component-status-warning, rgba(214, 127, 60, 1))";
+const INFO = "var(--component-status-info, rgba(0, 120, 212, 1))";
+const NEUTRAL = "var(--component-status-neutral, rgba(102, 102, 102, 1))";
 
-/** The running icon is drawn separately, as a spinner. */
-const ICON_PATH: Record<Exclude<Status, "inProgress">, string> = {
-    succeeded: "M6.7 11.3 3.9 8.5l1-1 1.8 1.8 4.4-4.4 1 1z",
-    failed: "M11.1 6 9.1 8l2 2-1.1 1.1-2-2-2 2L4.9 10l2-2-2-2L6 4.9l2 2 2-2z",
-    neutral: "M4.5 7.25h7v1.5h-7z",
-    waiting: "M5.5 4.5h1.75v7H5.5zm3.25 0h1.75v7H8.75z",
+/** A filled circle with a white glyph, or a white disc in a ring with the glyph cut out. */
+const ICONS: Record<Icon, { color: string; filled: boolean; path: string }> = {
+    success: {
+        color: SUCCESS,
+        filled: true,
+        path: "M6.062 11.144l-.003-.002-1.784-1.785A.937.937 0 1 1 5.6 8.031l1.125 1.124 3.88-3.88A.937.937 0 1 1 11.931 6.6l-4.54 4.54-.004.004a.938.938 0 0 1-1.325 0z",
+    },
+    warning: {
+        color: WARNING,
+        filled: true,
+        path: "M8.91 3.9a.9.9 0 0 0-1.8 0v4.7a.9.9 0 1 0 1.8 0V3.9zm-.95 8.65a.9.9 0 1 0 0-1.8.9.9 0 0 0 0 1.8z",
+    },
+    failed: {
+        color: ERROR,
+        filled: true,
+        path: "M10.984 5.004a.9.9 0 0 1 0 1.272L9.27 7.99l1.74 1.741a.9.9 0 1 1-1.272 1.273l-1.74-1.741-1.742 1.74a.9.9 0 1 1-1.272-1.272l1.74-1.74-1.713-1.714a.9.9 0 0 1 1.273-1.273l1.713 1.713 1.714-1.713a.9.9 0 0 1 1.273 0z",
+    },
+    running: {
+        color: INFO,
+        filled: true,
+        path: "M4.75 8a3.25 3.25 0 0 1 1.917-2.965c.33-.148.583-.453.583-.814 0-.479-.432-.848-.881-.683A4.752 4.752 0 0 0 3.29 8.62c.064.49.616.697 1.043.45.303-.175.443-.528.423-.877A3.304 3.304 0 0 1 4.75 8zm6.5 0c0 .065-.002.13-.006.194-.02.349.12.702.422.877.428.247.98.04 1.044-.45a4.752 4.752 0 0 0-3.078-5.084c-.45-.164-.882.205-.882.684 0 .36.253.666.583.814A3.25 3.25 0 0 1 11.25 8zM8 11.25c.758 0 1.455-.26 2.008-.694.293-.23.696-.31 1.019-.123.402.233.51.77.167 1.083A4.733 4.733 0 0 1 8 12.75c-1.23 0-2.35-.467-3.194-1.234-.344-.312-.235-.85.168-1.083.322-.186.725-.108 1.018.123.553.435 1.25.694 2.008.694z",
+    },
+    waiting: {
+        color: INFO,
+        filled: true,
+        path: "M8 3.5a.9.9 0 0 1 .9.9v3.325l2.002 2.001A.9.9 0 1 1 9.629 11L7.408 8.778A.898.898 0 0 1 7.1 8.1V4.4a.9.9 0 0 1 .9-.9z",
+    },
+    queued: {
+        color: NEUTRAL,
+        filled: false,
+        path: "M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm0-1.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13z",
+    },
+    canceled: {
+        color: NEUTRAL,
+        filled: false,
+        path: "M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-1.5 0a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0zM6.41 5.124a.9.9 0 1 0-1.274 1.272l4.385 4.385a.9.9 0 1 0 1.272-1.273L6.41 5.124z",
+    },
+    skipped: {
+        color: NEUTRAL,
+        filled: false,
+        path: "M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-1.5 0a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0zM6.752 4.372a.861.861 0 0 1 1.218 0l3.005 3.005a.86.86 0 0 1 .252.62.859.859 0 0 1-.252.626L7.97 11.628a.861.861 0 1 1-1.218-1.218L9.162 8l-2.41-2.41a.861.861 0 0 1 0-1.218z",
+    },
 };
 
 function StatusIcon(props: { result: DeploymentRecord["result"] }): JSX.Element {
-    const { status, label } = STATUS[props.result] || STATUS.unknown;
-
-    if (status === "inProgress") {
-        // Spins like the built-in in-progress icon while the deployment runs.
-        return (
-            <svg
-                className="dsb-status dsb-status--running"
-                viewBox="0 0 16 16"
-                width="14"
-                height="14"
-                role="img"
-                aria-label={label}
-                focusable="false"
-            >
-                <title>{label}</title>
-                <circle
-                    cx="8"
-                    cy="8"
-                    r="6.5"
-                    fill="none"
-                    stroke={ICON_FILL.inProgress}
-                    strokeOpacity="0.25"
-                    strokeWidth="3"
-                />
-                <path d="M8 1.5A6.5 6.5 0 0 1 14.5 8" fill="none" stroke={ICON_FILL.inProgress} strokeWidth="3" />
-            </svg>
-        );
-    }
+    const { icon, label } = STATUS[props.result] || STATUS.unknown;
+    const { color, filled, path } = ICONS[icon];
 
     return (
         <svg
@@ -92,10 +106,26 @@ function StatusIcon(props: { result: DeploymentRecord["result"] }): JSX.Element 
             role="img"
             aria-label={label}
             focusable="false"
+            style={{ color }}
         >
             <title>{label}</title>
-            <circle cx="8" cy="8" r="8" fill={ICON_FILL[status]} />
-            <path d={ICON_PATH[status]} fill="#FFFFFF" />
+            {filled ? (
+                <>
+                    <circle cx="8" cy="8" r="8" fill="currentColor" />
+                    {icon === "running" ? (
+                        <g className="dsb-status-running-arcs">
+                            <path d={path} fill="#fff" />
+                        </g>
+                    ) : (
+                        <path d={path} fill="#fff" fillRule="evenodd" clipRule="evenodd" />
+                    )}
+                </>
+            ) : (
+                <>
+                    <circle cx="8" cy="8" r="7" fill="#fff" />
+                    <path d={path} fill="currentColor" fillRule="evenodd" clipRule="evenodd" />
+                </>
+            )}
         </svg>
     );
 }
