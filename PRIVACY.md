@@ -13,7 +13,6 @@ telemetry and no third-party services.
 |---|---|
 | Links on the open work item | `vso.work` (read) |
 | Runs, environments and deployment records | `vso.build` (read) |
-| Commits and pull requests linked to the open work item | `vso.code` (read) |
 
 ## Data stored
 

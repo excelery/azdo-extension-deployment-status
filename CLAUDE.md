@@ -39,8 +39,8 @@ For text users see (Marketplace page, manifest, menus, panels, messages):
 Both the work item group and the menu action are constrained on a `ms.vss-web.feature` contribution
 (`preview`), off by default and enabled per user in **Preview features**. With the flag off neither appears.
 
-The menu item reads **Boards Integration** with `order: 35`. Scopes are `vso.work`, `vso.build` and
-`vso.code`, all read-only. `static/logo.png` is the only image asset.
+The menu item reads **Boards Integration** with `order: 35`. Scopes are `vso.work` and `vso.build`,
+both read-only. `static/logo.png` is the only image asset.
 
 **Read-only is a product decision, not just a technical one.** This is a stopgap until Microsoft ships
 the feature natively; writing nothing means it cannot collide with their implementation and leaves
@@ -125,18 +125,19 @@ one on the default branch, so it cannot review the pull request that introduces 
 - **An environment deployment's Changes and Work items tabs stay empty unless the deployment job runs
   `- checkout: self`** (verified). Deployment jobs check out nothing by default. The extension doesn't
   depend on those tabs, but run links open that page, so users notice.
-- **Runs come from two sources, combined.** Integrated in build links appear only when a run
-  completes, so they never show a run waiting on an approval. Commit and pull request links exist from
-  the start: `CommitRunService` lists the configured pipelines' runs of each linked repository queued
-  after the commit was pushed, and picks the runs a build link would name: per pipeline and branch,
-  the first run containing the commit and each later run until one succeeds. Containment comes from
-  `diffs/commits` (`behindCount` 0), found by binary search since it holds for every later run on a
-  branch. It proves the run's source contains the commit, not what the deployed artifact contains. It covers Azure Repos only, and
-  a pull request only once completed, through its merge commit. Build links still cover GitHub and
-  runs deleted by retention (`includeDeleted` does not return those). `DeploymentsResult.noRuns` lets
-  the empty state ask for automatic linking when neither source found anything.
-- **Bulk commit APIs omit `parents`.** `commitsbatch` and commit listings returned commits without
-  parents (verified), so ancestry cannot be walked from them. Use `diffs/commits` instead.
+- **Runs come from two sources, combined.** Completed runs are the Integrated in build links. Those
+  appear only when a run completes, so they never show a run waiting on an approval. For runs in
+  progress, `InProgressRunService` takes the repositories of the work item's commit and pull request
+  links, lists their runs in progress (`statusFilter=inProgress`, only pipelines with Boards Integration
+  enabled), and keeps a run when `builds/{id}/workitems` lists the work item: the list Azure DevOps
+  makes the build link from, so no ancestry is computed here (verified on a run waiting for approval,
+  and against the links of completed runs). The list is computed from the last successful run as of
+  now, so a link can still differ when another run succeeds first. Only the repository's own project
+  is searched, and Azure Repos only. `DeploymentsResult.noRuns` lets the empty state ask for automatic
+  linking when neither source found anything.
+- **A stage waiting for an approval has no deployment record.** The run's timeline shows it: a
+  `Checkpoint.Approval` record in progress under the stage. It is placed in the environment where the
+  pipeline's latest record for the same stage name is; a stage that never deployed is not shown.
 - **Config keys on the environment id**, with the environment name copied in on save so the work item
   control can label a deployment without listing environments at render time. Only mapped environments
   are queried, which bounds the request count.
@@ -157,7 +158,7 @@ one on the default branch, so it cannot review the pull request that introduces 
 Work test-first: `.claude/skills/tdd/SKILL.md` has the workflow and, more usefully, the boundary of what
 unit tests can and cannot reach in this codebase.
 
-`npm test` (vitest). The suite covers `src/Deployments.ts` and `src/CommitRuns.ts`, which is where the
+`npm test` (vitest). The suite covers `src/Deployments.ts` and `src/InProgressRuns.ts`, which is where the
 decisions live: link parsing, run matching, result mapping, environment filtering, grouping and ordering.
 Both are deliberately free of SDK imports so they run in plain Node; the services are thin wrappers that
 fetch and delegate to them. Put new logic there rather than in a service, or it cannot be tested.

@@ -8,8 +8,10 @@ The extension adds a custom control to Azure Boards work item forms that display
 
 Runs are found in two ways:
 
-- Integrated in build links, which are added when a run completes.
-- Commits and pull requests linked to the work item, in Azure Repos. These find the same runs an Integrated in build link would, while they are still in progress, for example waiting for an approval. A completed pull request counts through its merge commit.
+- Completed runs: the work item's Integrated in build links.
+- Runs in progress, for example waiting for an approval: Integrated in build links are only added when a run completes. The extension takes the repositories of the work item's commit and pull request links (Azure Repos), lists their runs in progress for pipelines with Boards Integration enabled, and keeps the runs whose work items, as Azure DevOps lists them for the run, include this work item. These are the runs that will get the Integrated in build link when they complete.
+
+For each run, deployments are read from the environments mapped in the pipeline's Boards Integration. A stage of a run in progress that waits for an approval is shown as Waiting for approval, in the environment that stage deployed to before.
 
 The extension does not write data to work items; it only reads existing links. Uninstalling it will not affect your work items or any existing data.
 
@@ -51,7 +53,7 @@ If not needed for classic release pipelines, Hide the built-in Deployment sectio
 
 ## Permissions and privacy
 
-This extension requires read-only access to work items, builds and code. No data leaves your Azure DevOps organization. See [PRIVACY.md](https://github.com/excelery/azdo-extension-deployment-status/blob/main/PRIVACY.md).
+This extension requires read-only access to work items and builds. No data leaves your Azure DevOps organization. See [PRIVACY.md](https://github.com/excelery/azdo-extension-deployment-status/blob/main/PRIVACY.md).
 
 ## Support
 

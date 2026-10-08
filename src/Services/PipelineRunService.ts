@@ -8,6 +8,7 @@ import {
     pipelinesOfBuilds,
     toDeploymentRecords,
 } from "../Deployments";
+import { WaitingStage, waitingDeployments } from "../InProgressRuns";
 
 export { EnvironmentSummary } from "../Deployments";
 
@@ -73,22 +74,23 @@ class PipelineRunService {
         return records;
     }
 
+    /** The runs' deployments, and their stages waiting for an approval, in the environments. */
     public async deploymentsIn(
         environments: EnvironmentSummary[],
-        runIds: number[]
+        runIds: number[],
+        waiting: WaitingStage[] = []
     ): Promise<DeploymentRecord[]> {
         if (!environments.length || !runIds.length) {
             return [];
         }
 
         const perEnvironment = await Promise.all(
-            environments.map(async (environment) =>
-                toDeploymentRecords(
-                    environment,
-                    await this.recordsOf(environment, (page) => olderThanRuns(page, runIds)),
-                    runIds
-                )
-            )
+            environments.map(async (environment) => {
+                const raw = await this.recordsOf(environment, (page) => olderThanRuns(page, runIds));
+                return toDeploymentRecords(environment, raw, runIds).concat(
+                    waitingDeployments(waiting, environment, raw)
+                );
+            })
         );
 
         return perEnvironment.reduce((all, some) => all.concat(some), []);

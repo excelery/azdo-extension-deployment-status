@@ -24,7 +24,7 @@ interface Urls {
     pipeline(pipeline: PipelineDeployments): string;
 }
 
-type Status = "succeeded" | "failed" | "neutral" | "inProgress";
+type Status = "succeeded" | "failed" | "neutral" | "inProgress" | "waiting";
 
 const STATUS: Record<DeploymentRecord["result"], { status: Status; label: string }> = {
     succeeded: { status: "succeeded", label: "Succeeded" },
@@ -33,6 +33,7 @@ const STATUS: Record<DeploymentRecord["result"], { status: Status; label: string
     canceled: { status: "neutral", label: "Canceled" },
     skipped: { status: "neutral", label: "Skipped" },
     inProgress: { status: "inProgress", label: "In progress" },
+    waitingForApproval: { status: "waiting", label: "Waiting for approval" },
     unknown: { status: "neutral", label: "Unknown" },
 };
 
@@ -41,6 +42,7 @@ const ICON_FILL: Record<Status, string> = {
     failed: "#CD4A45",
     neutral: "#8A8886",
     inProgress: "#0078D4",
+    waiting: "#0078D4",
 };
 
 const ICON_PATH: Record<Status, string> = {
@@ -48,6 +50,7 @@ const ICON_PATH: Record<Status, string> = {
     failed: "M11.1 6 9.1 8l2 2-1.1 1.1-2-2-2 2L4.9 10l2-2-2-2L6 4.9l2 2 2-2z",
     neutral: "M4.5 7.25h7v1.5h-7z",
     inProgress: "M7.25 4h1.5v3.7l2.6 1.5-.75 1.3-3.35-1.95z",
+    waiting: "M5.5 4.5h1.75v7H5.5zm3.25 0h1.75v7H8.75z",
 };
 
 function StatusIcon(props: { result: DeploymentRecord["result"] }): JSX.Element {
@@ -103,7 +106,10 @@ function PipelineRow(props: { pipeline: PipelineDeployments; urls: Urls }): JSX.
                         {pipeline.pipelineName} ({pipeline.history.length})
                     </a>
                     <span className="dsb-pipeline-subtitle">
-                        {relativeTime(latest.finishTime)} on {latest.environmentName || latest.stageName}
+                        {latest.result === "waitingForApproval"
+                            ? STATUS.waitingForApproval.label
+                            : relativeTime(latest.finishTime)}{" "}
+                        on {latest.environmentName || latest.stageName}
                     </span>
                 </span>
                 <span className={`dsb-chevron ${expanded ? "dsb-chevron--open" : ""}`} aria-hidden="true">

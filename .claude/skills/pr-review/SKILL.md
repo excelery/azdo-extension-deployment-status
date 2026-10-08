@@ -19,12 +19,12 @@ feature natively, and writing nothing is why it cannot collide with their implem
 anything to clean up. A PR that introduces a write — a decorator, a task, a `PATCH` — breaks that
 promise. It needs an explicit product decision, not a review nod.
 
-**Scopes stay `vso.work` + `vso.build` + `vso.code`, all read-only.** Any scope addition needs an administrator to
+**Scopes stay `vso.work` + `vso.build`, both read-only.** Any scope addition needs an administrator to
 re-approve the extension in every org, and anything `_manage` triggers *"This extension requires high
 privilege scopes"* at install. If a diff adds a scope, ask whether another API route avoids it — that
 has worked before. Verify with the `verify-live` skill rather than accepting the reasoning.
 
-**Logic lives in `src/Deployments.ts` and `src/CommitRuns.ts`.** It imports no SDK so it can be tested. Logic that drifts into a
+**Logic lives in `src/Deployments.ts` and `src/InProgressRuns.ts`.** It imports no SDK so it can be tested. Logic that drifts into a
 service becomes untestable in practice. If a PR adds branching to a service, a pure function is usually
 hiding in it.
 

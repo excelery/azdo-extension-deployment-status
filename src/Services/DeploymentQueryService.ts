@@ -11,7 +11,7 @@ import {
     runIdsFromRelations,
 } from "../Deployments";
 import AzdoClient from "./AzdoClient";
-import CommitRunService from "./CommitRunService";
+import InProgressRunService from "./InProgressRunService";
 import PipelineRunService from "./PipelineRunService";
 import PipelineConfigService from "./PipelineConfigService";
 
@@ -19,39 +19,42 @@ export { GroupedDeployments, PipelineDeployments } from "../Deployments";
 
 export interface DeploymentsResult {
     groups: GroupedDeployments[];
-    /** No run was found through either the work item's build links or its commit links. */
+    /** No run was found: no build links, and no run in progress that includes the work item. */
     noRuns: boolean;
 }
 
 class DeploymentQueryService {
     /**
-     * A work item's runs come from two sources, combined. Integrated in build links cover completed
-     * runs, including those from GitHub repositories. Commit and pull request links cover runs still
-     * in progress, from Azure Repos. Deployments are then read from the mapped environments.
+     * Completed runs are the work item's Integrated in build links, as always. A link is added only
+     * when a run completes, so runs in progress are found through the repositories of the work item's
+     * commit and pull request links (see InProgressRuns.ts). Deployments are then read from the mapped
+     * environments.
      */
     public async getDeployments(): Promise<DeploymentsResult> {
-        const configsPromise = PipelineConfigService.getAll();
-
         const formService = await SDK.getService<IWorkItemFormService>(
             WorkItemTrackingServiceIds.WorkItemFormService
         );
-        const relations = (await formService.getWorkItemRelations()) as WorkItemRelation[];
+        const [allConfigs, { projectId }, relations, workItemId] = await Promise.all([
+            PipelineConfigService.getAll(),
+            AzdoClient.getContext(),
+            formService.getWorkItemRelations() as Promise<WorkItemRelation[]>,
+            formService.getId(),
+        ]);
         const linkedRunIds = runIdsFromRelations(relations);
 
-        const [allConfigs, { projectId }] = await Promise.all([configsPromise, AzdoClient.getContext()]);
-        const [linkedPipelines, commitRuns] = await Promise.all([
+        const [linkedPipelines, inProgress] = await Promise.all([
             PipelineRunService.pipelinesOfRuns(linkedRunIds),
-            CommitRunService.runsOf(relations, allConfigs),
+            InProgressRunService.runsOf(relations, allConfigs, workItemId),
         ]);
 
-        const runIds = Array.from(new Set(linkedRunIds.concat(commitRuns.map((run) => run.id))));
+        const runIds = Array.from(new Set(linkedRunIds.concat(inProgress.runs.map((run) => run.id))));
         if (!runIds.length) {
             return { groups: [], noRuns: true };
         }
 
-        pipelinesOfBuilds(commitRuns).forEach((pipeline) => linkedPipelines.add(pipeline));
+        pipelinesOfBuilds(inProgress.runs).forEach((pipeline) => linkedPipelines.add(pipeline));
         const configs = relevantConfigs(allConfigs, projectId, linkedPipelines);
-        const records = await PipelineRunService.deploymentsIn(mappedEnvironments(configs), runIds);
+        const records = await PipelineRunService.deploymentsIn(mappedEnvironments(configs), runIds, inProgress.waiting);
 
         return { groups: groupDeployments(records, configs), noRuns: false };
     }
