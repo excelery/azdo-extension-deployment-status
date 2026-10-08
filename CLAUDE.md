@@ -128,9 +128,10 @@ one on the default branch, so it cannot review the pull request that introduces 
 - **Runs come from two sources, combined.** Integrated in build links appear only when a run
   completes, so they never show a run waiting on an approval. Commit and pull request links exist from
   the start: `CommitRunService` lists the configured pipelines' runs of each linked repository queued
-  after the commit was pushed, and keeps those whose source is the commit or contains it, decided by
-  `diffs/commits` (`behindCount` 0). This proves the run's source contains the commit, not that a
-  deployment first introduced the work item; don't label it as more. It covers Azure Repos only, and
+  after the commit was pushed, and picks the runs a build link would name: per pipeline and branch,
+  the first run containing the commit and each later run until one succeeds. Containment comes from
+  `diffs/commits` (`behindCount` 0), found by binary search since it holds for every later run on a
+  branch. It proves the run's source contains the commit, not what the deployed artifact contains. It covers Azure Repos only, and
   a pull request only once completed, through its merge commit. Build links still cover GitHub and
   runs deleted by retention (`includeDeleted` does not return those). `DeploymentsResult.noRuns` lets
   the empty state ask for automatic linking when neither source found anything.

@@ -3,13 +3,14 @@ import { describe, expect, it } from "vitest";
 import { PipelineConfig } from "./Contracts";
 import {
     RepositoryBuild,
-    ancestryChecks,
-    buildsContaining,
+    byPipelineAndBranch,
     byRepository,
     containsBase,
     earliest,
     enabledPipelinesByProject,
+    firstContaining,
     gitLinksFromRelations,
+    linkedRuns,
     mergeCommitOf,
 } from "./CommitRuns";
 
@@ -23,8 +24,27 @@ function link(kind: string, id: string, project = PROJECT, repository = REPO) {
     return { rel: "ArtifactLink", url: `vstfs:///Git/${kind}/${project}%2F${repository}%2F${id}` };
 }
 
-function build(id: number, sourceVersion: string): RepositoryBuild {
-    return { id, sourceVersion, project: { id: PROJECT }, definition: { id: 27 } };
+function build(id: number, sourceVersion: string, overrides: Partial<RepositoryBuild> = {}): RepositoryBuild {
+    return {
+        id,
+        sourceVersion,
+        sourceBranch: "refs/heads/main",
+        queueTime: new Date(Date.UTC(2026, 9, 8, 0, id % 1000)).toISOString(),
+        result: "succeeded",
+        project: { id: PROJECT },
+        definition: { id: 27 },
+        ...overrides,
+    };
+}
+
+/** Containment as a set of run ids, counting each check. */
+function containsRuns(ids: number[]) {
+    const counter = { checks: 0 };
+    const contains = async (run: RepositoryBuild) => {
+        counter.checks++;
+        return ids.includes(run.id);
+    };
+    return { contains, counter };
 }
 
 describe("gitLinksFromRelations", () => {
@@ -123,14 +143,6 @@ describe("earliest", () => {
     });
 });
 
-describe("ancestryChecks", () => {
-    it("checks each distinct other source version once", () => {
-        const checks = ancestryChecks([build(2203, LINKED), build(2205, LATER), build(2209, LATER)], [LINKED]);
-
-        expect(checks).toEqual([{ base: LINKED, target: LATER }]);
-    });
-});
-
 describe("containsBase", () => {
     // Captured from the commit diffs API: base LINKED against its descendant and its ancestor.
     it("is true when the target is not behind the base", () => {
@@ -147,16 +159,79 @@ describe("containsBase", () => {
     });
 });
 
-describe("buildsContaining", () => {
-    const builds = [build(2203, LINKED), build(2205, LATER), build(2100, EARLIER), { id: 1, project: { id: PROJECT } }];
+describe("byPipelineAndBranch", () => {
+    it("groups runs per pipeline and branch, oldest first", () => {
+        const groups = byPipelineAndBranch([
+            build(3, LATER),
+            build(1, LINKED),
+            build(2, LATER, { sourceBranch: "refs/heads/feature" }),
+            build(4, LATER, { definition: { id: 26 } }),
+            { id: 5, project: { id: PROJECT }, definition: { id: 27 } },
+        ]);
 
-    it("keeps builds of the linked commit and of commits containing it", () => {
-        const contains = (check: { base: string; target: string }) => check.target === LATER;
+        expect(groups.map((group) => group.map((run) => run.id))).toEqual([[1, 3], [2], [4]]);
+    });
+});
 
-        expect(buildsContaining(builds, [LINKED], contains).map((b) => b.id)).toEqual([2203, 2205]);
+describe("firstContaining", () => {
+    const runs = Array.from({ length: 100 }, (_, index) => build(index + 1, LATER));
+
+    it("finds the first run containing the commit with a binary search", async () => {
+        const { contains, counter } = containsRuns(runs.filter((run) => run.id >= 37).map((run) => run.id));
+
+        expect(await firstContaining(runs, contains)).toBe(36);
+        expect(counter.checks).toBeLessThanOrEqual(7);
     });
 
-    it("keeps nothing unresolved", () => {
-        expect(buildsContaining(builds, [LINKED], () => false).map((b) => b.id)).toEqual([2203]);
+    it("returns -1 when no run contains it", async () => {
+        expect(await firstContaining(runs, containsRuns([]).contains)).toBe(-1);
+    });
+
+    it("returns -1 for no runs", async () => {
+        expect(await firstContaining([], containsRuns([]).contains)).toBe(-1);
+    });
+});
+
+describe("linkedRuns", () => {
+    it("names the first run containing the commit when it succeeded", async () => {
+        const runs = [build(1, EARLIER), build(2, LINKED), build(3, LATER), build(4, LATER)];
+
+        const linked = await linkedRuns(runs, containsRuns([2, 3, 4]).contains);
+
+        expect(linked.map((run) => run.id)).toEqual([2]);
+    });
+
+    it("passes the work item on from failed, canceled and unfinished runs to the next success", async () => {
+        const runs = [
+            build(1, EARLIER),
+            build(2, LINKED, { result: "failed" }),
+            build(3, LATER, { result: "canceled" }),
+            build(4, LATER, { result: undefined }),
+            build(5, LATER),
+            build(6, LATER),
+        ];
+
+        const linked = await linkedRuns(runs, containsRuns([2, 3, 4, 5, 6]).contains);
+
+        expect(linked.map((run) => run.id)).toEqual([2, 3, 4, 5]);
+    });
+
+    it("names a run still in progress, waiting on an approval for example", async () => {
+        const linked = await linkedRuns([build(1, EARLIER), build(2, LATER, { result: undefined })], containsRuns([2]).contains);
+
+        expect(linked.map((run) => run.id)).toEqual([2]);
+    });
+
+    it("works per pipeline and branch", async () => {
+        const runs = [
+            build(1, LINKED),
+            build(2, LATER, { definition: { id: 26 } }),
+            build(3, LATER, { sourceBranch: "refs/heads/release" }),
+            build(4, EARLIER, { sourceBranch: "refs/heads/old" }),
+        ];
+
+        const linked = await linkedRuns(runs, containsRuns([1, 2, 3]).contains);
+
+        expect(linked.map((run) => run.id).sort()).toEqual([1, 2, 3]);
     });
 });

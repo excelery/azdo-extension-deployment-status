@@ -9,7 +9,7 @@ The extension adds a custom control to Azure Boards work item forms that display
 Runs are found in two ways:
 
 - Integrated in build links, which are added when a run completes.
-- Commits and pull requests linked to the work item, in Azure Repos. These show runs that contain the commit while they are still in progress, for example waiting for an approval. A completed pull request counts through its merge commit.
+- Commits and pull requests linked to the work item, in Azure Repos. These find the same runs an Integrated in build link would, while they are still in progress, for example waiting for an approval. A completed pull request counts through its merge commit.
 
 The extension does not write data to work items; it only reads existing links. Uninstalling it will not affect your work items or any existing data.
 

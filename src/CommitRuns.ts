@@ -5,10 +5,9 @@ import { WorkItemRelation, projectIdOf } from "./Deployments";
  * Finding the runs that contain a work item's commits.
  *
  * Integrated in build links appear only when a run completes. A work item's commit and pull request
- * links exist from the start, so the runs built from those commits, or from later commits that
- * include them, are found while they are still in progress, waiting on an approval for example.
- * This proves a run's source history contains the commit. It does not prove that a deployment
- * first introduced the work item, or what the deployed artifact contains.
+ * links exist from the start, so the same runs are found from them while still in progress, waiting
+ * on an approval for example. The runs chosen are the ones a build link would name (see `linkedRuns`).
+ * A match proves a run's source history contains the commit, not what the deployed artifact contains.
  *
  * Azure Repos only: the Git APIs used here do not cover GitHub repositories.
  *
@@ -37,6 +36,9 @@ export interface GitLinks {
 export interface RepositoryBuild {
     id: number;
     sourceVersion?: string;
+    sourceBranch?: string;
+    queueTime?: string;
+    result?: string;
     project?: { id: string };
     definition?: { id: number };
 }
@@ -46,7 +48,7 @@ export interface PullRequest {
     lastMergeCommit?: { commitId?: string };
 }
 
-/** A pair whose ancestry decides a match: does `target` contain `base`? */
+/** Does `target` contain `base`? */
 export interface AncestryCheck {
     base: string;
     target: string;
@@ -126,23 +128,6 @@ export function earliest(times: string[]): string | undefined {
     return parsed.length ? new Date(Math.min(...parsed)).toISOString() : undefined;
 }
 
-/**
- * The ancestry checks needed to decide which builds contain a linked commit. A build of the linked
- * commit itself needs none, and each distinct pair is checked once.
- */
-export function ancestryChecks(builds: RepositoryBuild[], linkedCommits: string[]): AncestryCheck[] {
-    const checks = new Map<string, AncestryCheck>();
-    for (const target of sourceVersions(builds)) {
-        if (linkedCommits.includes(target)) {
-            continue;
-        }
-        for (const base of linkedCommits) {
-            checks.set(checkKey({ base, target }), { base, target });
-        }
-    }
-    return Array.from(checks.values());
-}
-
 export function checkKey(check: AncestryCheck): string {
     return `${check.base}..${check.target}`;
 }
@@ -155,32 +140,70 @@ export function containsBase(diff: { behindCount?: number } | undefined): boolea
     return !!diff && diff.behindCount === 0;
 }
 
-/** The builds whose source is a linked commit or contains one. */
-export function buildsContaining(
-    builds: RepositoryBuild[],
-    linkedCommits: string[],
-    contains: (check: AncestryCheck) => boolean
-): RepositoryBuild[] {
-    return builds.filter((build) => {
-        const target = sourceVersionOf(build);
-        return (
-            !!target &&
-            linkedCommits.some((base) => base === target || contains({ base, target }))
-        );
-    });
-}
-
-function sourceVersionOf(build: RepositoryBuild): string | undefined {
+export function sourceVersionOf(build: RepositoryBuild): string | undefined {
     return build && build.sourceVersion ? build.sourceVersion.toLowerCase() : undefined;
 }
 
-function sourceVersions(builds: RepositoryBuild[]): string[] {
-    const versions = new Set<string>();
+/** Runs per pipeline and branch, oldest first. */
+export function byPipelineAndBranch(builds: RepositoryBuild[]): RepositoryBuild[][] {
+    const groups = new Map<string, RepositoryBuild[]>();
     for (const build of builds || []) {
-        const version = sourceVersionOf(build);
-        if (version) {
-            versions.add(version);
+        if (!build || !build.definition || !sourceVersionOf(build)) {
+            continue;
+        }
+        const key = `${build.project ? build.project.id : ""}/${build.definition.id}/${build.sourceBranch || ""}`;
+        groups.set(key, (groups.get(key) || []).concat(build));
+    }
+    return Array.from(groups.values()).map((runs) => runs.slice().sort(oldestFirst));
+}
+
+function oldestFirst(a: RepositoryBuild, b: RepositoryBuild): number {
+    return (Date.parse(a.queueTime || "") || 0) - (Date.parse(b.queueTime || "") || 0) || a.id - b.id;
+}
+
+/**
+ * The index of the first run that contains the commit, or -1. Along one branch, once a run contains
+ * a commit every later run does too, so a binary search needs only a few checks however many runs
+ * there are. A run queued later for an older commit, a manual run for example, breaks that order and
+ * can move the answer to a neighbouring run.
+ */
+export async function firstContaining(
+    runs: RepositoryBuild[],
+    contains: (run: RepositoryBuild) => Promise<boolean>
+): Promise<number> {
+    let low = 0;
+    let high = runs.length;
+    while (low < high) {
+        const middle = Math.floor((low + high) / 2);
+        if (await contains(runs[middle])) {
+            high = middle;
+        } else {
+            low = middle + 1;
         }
     }
-    return Array.from(versions);
+    return low < runs.length ? low : -1;
+}
+
+/**
+ * The runs an Integrated in build link would name, per pipeline and branch. A run includes the work
+ * items of the commits since the pipeline's last successful run, so the first run containing the
+ * commit is linked, and so is each later run until one succeeds: a failed, canceled or unfinished run
+ * passes the work item on to the next.
+ */
+export async function linkedRuns(
+    builds: RepositoryBuild[],
+    contains: (run: RepositoryBuild) => Promise<boolean>
+): Promise<RepositoryBuild[]> {
+    const perGroup = await Promise.all(
+        byPipelineAndBranch(builds).map(async (runs) => {
+            const first = await firstContaining(runs, contains);
+            return first < 0 ? [] : throughFirstSuccess(runs.slice(first));
+        })
+    );
+    return perGroup.reduce((all, some) => all.concat(some), [] as RepositoryBuild[]);
+}
+
+function throughFirstSuccess(runs: RepositoryBuild[]): RepositoryBuild[] {
+    const succeeded = runs.findIndex((run) => run.result === "succeeded");
+    return succeeded < 0 ? runs : runs.slice(0, succeeded + 1);
 }

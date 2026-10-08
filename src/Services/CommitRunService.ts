@@ -5,35 +5,33 @@ import {
     PullRequest,
     PullRequestRef,
     RepositoryBuild,
-    ancestryChecks,
-    buildsContaining,
     byRepository,
     checkKey,
     containsBase,
     earliest,
     enabledPipelinesByProject,
     gitLinksFromRelations,
+    linkedRuns,
     mergeCommitOf,
+    sourceVersionOf,
 } from "../CommitRuns";
 import { WorkItemRelation } from "../Deployments";
 import AzdoClient from "./AzdoClient";
 
 /**
- * Bounds the build listing per repository and project: 3 pages is 3,000 runs. Runs are listed newest
- * first, so a cut drops the oldest, completed runs, which build links cover, never a run in progress.
+ * Bounds the build listing per repository and project: 3 pages is 3,000 runs. Runs are listed oldest
+ * first from the push, and the runs a build link would name come right after it.
  */
 const BUILD_PAGE_SIZE = 1000;
 const MAX_BUILD_PAGES = 3;
-/** Ancestry checks in flight at once. */
-const CONCURRENT_CHECKS = 6;
 
 interface GitCommit {
     push?: { date?: string };
 }
 
 /**
- * Finds the runs whose source contains a commit linked to the work item, directly or through a
- * completed pull request. See CommitRuns.ts for what a match does and does not prove.
+ * Finds the runs an Integrated in build link would name for the work item's commits, linked directly
+ * or through a completed pull request, including runs still in progress. See CommitRuns.ts.
  *
  * Push times and ancestry never change, so they are cached for the life of the frame. A request that
  * fails leaves its commit or run unresolved: it is not shown, never guessed.
@@ -77,13 +75,19 @@ class CommitRunService {
         const builds = perProject.reduce((all, some) => all.concat(some), [] as RepositoryBuild[]);
 
         const linkedCommits = resolved.map((commit) => commit.commitId);
-        const checks = ancestryChecks(builds, linkedCommits);
-        const results = await inBatches(checks, CONCURRENT_CHECKS, (check) =>
-            this.contains(projectId, repositoryId, check)
-        );
-        const contained = new Set(checks.filter((_, index) => results[index]).map(checkKey));
-
-        return buildsContaining(builds, linkedCommits, (check) => contained.has(checkKey(check)));
+        return linkedRuns(builds, async (run) => {
+            const target = sourceVersionOf(run);
+            if (!target) {
+                return false;
+            }
+            if (linkedCommits.includes(target)) {
+                return true;
+            }
+            const contained = await Promise.all(
+                linkedCommits.map((base) => this.contains(projectId, repositoryId, { base, target }))
+            );
+            return contained.includes(true);
+        });
     }
 
     private async mergeCommit(ref: PullRequestRef): Promise<CommitRef | undefined> {
@@ -116,7 +120,7 @@ class CommitRunService {
         }).catch(() => undefined);
     }
 
-    /** Runs of the given pipelines built from the repository, queued from `since` on, finished or not, newest first. */
+    /** Runs of the given pipelines built from the repository, queued from `since` on, finished or not, oldest first. */
     private async buildsOf(
         projectId: string,
         repositoryId: string,
@@ -132,7 +136,7 @@ class CommitRunService {
                 const response = await AzdoClient.getPage<{ value: RepositoryBuild[] }>(
                     `_apis/build/builds?repositoryId=${repositoryId}&repositoryType=TfsGit` +
                         `&definitions=${definitionIds.join(",")}&minTime=${encodeURIComponent(since)}` +
-                        `&queryOrder=queueTimeDescending&$top=${BUILD_PAGE_SIZE}${token}`,
+                        `&queryOrder=queueTimeAscending&$top=${BUILD_PAGE_SIZE}${token}`,
                     "7.1",
                     projectId
                 );
@@ -175,15 +179,6 @@ function cached<T>(cache: Map<string, Promise<T>>, key: string, fetch: () => Pro
         result.catch(() => cache.delete(key));
     }
     return result;
-}
-
-/** Runs `task` over `items` with at most `limit` in flight, keeping the order of `items`. */
-async function inBatches<T, R>(items: T[], limit: number, task: (item: T) => Promise<R>): Promise<R[]> {
-    const results: R[] = [];
-    for (let start = 0; start < items.length; start += limit) {
-        results.push(...(await Promise.all(items.slice(start, start + limit).map(task))));
-    }
-    return results;
 }
 
 export default new CommitRunService();
