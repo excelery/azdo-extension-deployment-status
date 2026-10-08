@@ -51,8 +51,9 @@ class AzdoClient {
         return this.context;
     }
 
-    public async get<T>(path: string, apiVersion = "7.1"): Promise<T | undefined> {
-        return (await this.getPage<T>(path, apiVersion)).body;
+    /** `project` is a project name or id; it defaults to the current project. */
+    public async get<T>(path: string, apiVersion = "7.1", project?: string): Promise<T | undefined> {
+        return (await this.getPage<T>(path, apiVersion, project)).body;
     }
 
     /** `project` is a project name or id; it defaults to the current project. */
@@ -81,41 +82,6 @@ class AzdoClient {
             body: await response.json(),
             continuationToken: response.headers.get("x-ms-continuationtoken") || undefined,
         };
-    }
-
-    /** A POST to an organization-level path, such as the contribution data provider query. */
-    public async postToOrganization<T>(path: string, body: unknown, apiVersion: string): Promise<T> {
-        const [context, accessToken] = await Promise.all([this.getContext(), getAccessToken()]);
-        const separator = path.indexOf("?") >= 0 ? "&" : "?";
-
-        const response = await fetch(`${context.baseUrl}/${path}${separator}api-version=${apiVersion}`, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-        });
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                token = undefined;
-            }
-            throw new Error(`${path} failed with ${response.status}`);
-        }
-        return response.json();
-    }
-
-    /** Diagnostic for the dev test: status and body of a request with the extension token. */
-    public async probe(url: string, body?: unknown): Promise<{ url: string; status: number; body: string }> {
-        const accessToken = await getAccessToken();
-        try {
-            const response = await fetch(url, {
-                method: body ? "POST" : "GET",
-                headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-                body: body ? JSON.stringify(body) : undefined,
-            });
-            return { url, status: response.status, body: (await response.text()).slice(0, 4000) };
-        } catch (error: any) {
-            return { url, status: 0, body: String(error && error.message) };
-        }
     }
 }
 

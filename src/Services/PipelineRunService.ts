@@ -44,7 +44,7 @@ class PipelineRunService {
      * Reads an environment's records newest first, a page at a time, until `enough` says the rest
      * cannot matter, the records run out, or MAX_PAGES is reached.
      */
-    public async recordsOf(
+    private async recordsOf(
         environment: EnvironmentSummary,
         enough: (page: RawDeploymentRecord[]) => boolean
     ): Promise<RawDeploymentRecord[]> {
@@ -67,9 +67,7 @@ class PipelineRunService {
                     break;
                 }
             }
-        } catch (error: any) {
-            // Diagnostic for the dev test.
-            console.warn("[Deployment Status]", "environment", environment.environmentId, "records failed:", error && error.message);
+        } catch {
         }
 
         return records;

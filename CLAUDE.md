@@ -39,8 +39,8 @@ For text users see (Marketplace page, manifest, menus, panels, messages):
 Both the work item group and the menu action are constrained on a `ms.vss-web.feature` contribution
 (`preview`), off by default and enabled per user in **Preview features**. With the flag off neither appears.
 
-The menu item reads **Boards Integration** with `order: 35`. Scopes are `vso.work` and `vso.build`,
-both read-only. `static/logo.png` is the only image asset.
+The menu item reads **Boards Integration** with `order: 35`. Scopes are `vso.work`, `vso.build` and
+`vso.code`, all read-only. `static/logo.png` is the only image asset.
 
 **Read-only is a product decision, not just a technical one.** This is a stopgap until Microsoft ships
 the feature natively; writing nothing means it cannot collide with their implementation and leaves
@@ -125,9 +125,17 @@ one on the default branch, so it cannot review the pull request that introduces 
 - **An environment deployment's Changes and Work items tabs stay empty unless the deployment job runs
   `- checkout: self`** (verified). Deployment jobs check out nothing by default. The extension doesn't
   depend on those tabs, but run links open that page, so users notice.
-- **The whole thing hinges on `Automatically link work items included in this run`.** With that pipeline
-  setting off there are no build links and nothing to join on. `DeploymentsResult.noBuildLinks` exists so
-  the empty state can say that rather than "no deployments".
+- **Runs come from two sources, combined.** Integrated in build links appear only when a run
+  completes, so they never show a run waiting on an approval. Commit and pull request links exist from
+  the start: `CommitRunService` lists the configured pipelines' runs of each linked repository queued
+  after the commit was pushed, and keeps those whose source is the commit or contains it, decided by
+  `diffs/commits` (`behindCount` 0). This proves the run's source contains the commit, not that a
+  deployment first introduced the work item; don't label it as more. It covers Azure Repos only, and
+  a pull request only once completed, through its merge commit. Build links still cover GitHub and
+  runs deleted by retention (`includeDeleted` does not return those). `DeploymentsResult.noRuns` lets
+  the empty state ask for automatic linking when neither source found anything.
+- **Bulk commit APIs omit `parents`.** `commitsbatch` and commit listings returned commits without
+  parents (verified), so ancestry cannot be walked from them. Use `diffs/commits` instead.
 - **Config keys on the environment id**, with the environment name copied in on save so the work item
   control can label a deployment without listing environments at render time. Only mapped environments
   are queried, which bounds the request count.
@@ -148,10 +156,10 @@ one on the default branch, so it cannot review the pull request that introduces 
 Work test-first: `.claude/skills/tdd/SKILL.md` has the workflow and, more usefully, the boundary of what
 unit tests can and cannot reach in this codebase.
 
-`npm test` (vitest). The suite covers `src/Deployments.ts`, which is where the decisions live: build-link
-parsing, result mapping, environment filtering, grouping and ordering. It is deliberately free of SDK
-imports so it runs in plain Node; the services are thin wrappers that fetch and delegate to it. Put new
-logic there rather than in a service, or it cannot be tested.
+`npm test` (vitest). The suite covers `src/Deployments.ts` and `src/CommitRuns.ts`, which is where the
+decisions live: link parsing, run matching, result mapping, environment filtering, grouping and ordering.
+Both are deliberately free of SDK imports so they run in plain Node; the services are thin wrappers that
+fetch and delegate to them. Put new logic there rather than in a service, or it cannot be tested.
 
 CI runs it before the build and publishes JUnit results, so a failure fails the run.
 

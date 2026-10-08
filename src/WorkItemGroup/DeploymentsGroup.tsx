@@ -142,7 +142,7 @@ function PipelineRow(props: { pipeline: PipelineDeployments; urls: Urls }): JSX.
     );
 }
 
-function EmptyState(props: { noBuildLinks: boolean; urls: Urls }): JSX.Element {
+function EmptyState(props: { noRuns: boolean; urls: Urls }): JSX.Element {
     const pipelines = (
         <a href={props.urls.pipelines} target="_blank" rel="noopener noreferrer">
             Pipelines
@@ -152,7 +152,7 @@ function EmptyState(props: { noBuildLinks: boolean; urls: Urls }): JSX.Element {
     return (
         <div className="dsb-empty">
             To track deployments associated with this work item, go to {pipelines} and turn on{" "}
-            {props.noBuildLinks
+            {props.noRuns
                 ? "Automatically link work items included in this run in your pipeline's Settings. "
                 : "deployment status reporting for Boards in your pipeline's Boards Integration menu. "}
             <a
@@ -307,7 +307,7 @@ function DeploymentsGroup(): JSX.Element {
     if (!ordered.length) {
         return (
             <div className="dsb-root">
-                <EmptyState noBuildLinks={result.noBuildLinks} urls={urls} />
+                <EmptyState noRuns={result.noRuns} urls={urls} />
             </div>
         );
     }

@@ -41,7 +41,8 @@
   },
   "scopes": [
     "vso.work",
-    "vso.build"
+    "vso.build",
+    "vso.code"
   ],
   "files": [
     {
