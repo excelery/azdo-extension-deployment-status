@@ -1,16 +1,9 @@
 import * as SDK from "azure-devops-extension-sdk";
 import { IWorkItemFormService, WorkItemTrackingServiceIds } from "azure-devops-extension-api/WorkItemTracking";
 
-import {
-    GroupedDeployments,
-    groupDeployments,
-    mappedEnvironments,
-    relevantConfigs,
-    runIdsFromRelations,
-} from "../Deployments";
-import AzdoClient from "./AzdoClient";
-import PipelineRunService from "./PipelineRunService";
+import { GroupedDeployments, groupDeployments } from "../Deployments";
 import PipelineConfigService from "./PipelineConfigService";
+import TraceabilityService from "./TraceabilityService";
 
 export { GroupedDeployments, PipelineDeployments } from "../Deployments";
 
@@ -20,33 +13,21 @@ export interface DeploymentsResult {
 }
 
 class DeploymentQueryService {
-    public async getRunIds(): Promise<number[]> {
-        const formService = await SDK.getService<IWorkItemFormService>(
-            WorkItemTrackingServiceIds.WorkItemFormService
-        );
-        const relations = await formService.getWorkItemRelations();
-        return runIdsFromRelations(relations as any);
-    }
-
     public async getDeployments(): Promise<DeploymentsResult> {
         const configsPromise = PipelineConfigService.getAll();
 
-        const runIds = await this.getRunIds();
-        if (!runIds.length) {
-            configsPromise.catch(() => undefined);
-            return { groups: [], noBuildLinks: true };
-        }
+        const formService = await SDK.getService<IWorkItemFormService>(
+            WorkItemTrackingServiceIds.WorkItemFormService
+        );
+        const [relations, workItemId, created] = await Promise.all([
+            formService.getWorkItemRelations(),
+            formService.getId(),
+            formService.getFieldValue("System.CreatedDate"),
+        ]);
+        const createdAt = Date.parse(String(created)) || 0;
 
-        const [allConfigs, { projectId }] = await Promise.all([configsPromise, AzdoClient.getContext()]);
-        const linkedPipelines = await PipelineRunService.pipelinesOfRuns(runIds);
-        const configs = relevantConfigs(allConfigs, projectId, linkedPipelines);
-        const environments = mappedEnvironments(configs);
-
-        if (!environments.length) {
-            return { groups: [], noBuildLinks: false };
-        }
-
-        const records = await PipelineRunService.deploymentsIn(environments, runIds);
+        const configs = await configsPromise;
+        const records = await TraceabilityService.deployments(workItemId, createdAt, relations as any, configs);
 
         return { groups: groupDeployments(records, configs), noBuildLinks: false };
     }

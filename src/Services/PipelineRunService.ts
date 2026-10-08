@@ -44,7 +44,7 @@ class PipelineRunService {
      * Reads an environment's records newest first, a page at a time, until `enough` says the rest
      * cannot matter, the records run out, or MAX_PAGES is reached.
      */
-    private async recordsOf(
+    public async recordsOf(
         environment: EnvironmentSummary,
         enough: (page: RawDeploymentRecord[]) => boolean
     ): Promise<RawDeploymentRecord[]> {

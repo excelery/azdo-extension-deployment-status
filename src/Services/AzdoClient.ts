@@ -82,6 +82,26 @@ class AzdoClient {
             continuationToken: response.headers.get("x-ms-continuationtoken") || undefined,
         };
     }
+
+    /** A POST to an organization-level path, such as the contribution data provider query. */
+    public async postToOrganization<T>(path: string, body: unknown, apiVersion: string): Promise<T> {
+        const [context, accessToken] = await Promise.all([this.getContext(), getAccessToken()]);
+        const separator = path.indexOf("?") >= 0 ? "&" : "?";
+
+        const response = await fetch(`${context.baseUrl}/${path}${separator}api-version=${apiVersion}`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                token = undefined;
+            }
+            throw new Error(`${path} failed with ${response.status}`);
+        }
+        return response.json();
+    }
 }
 
 export default new AzdoClient();
