@@ -5,7 +5,7 @@ variables:
   sourceDir: $(Build.SourcesDirectory)
   serviceConnection: spn-azdo-marketplace-publish
   # GitHub service connection used to create a release after each prod publish.
-  githubConnection: github-releases
+  githubConnection: excelery
   githubRepository: excelery/azdo-extension-deployment-status
   shareWith: 'excelery'
   # Test and prod can be shared with more organizations through the pipeline
