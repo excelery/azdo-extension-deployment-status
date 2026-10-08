@@ -19,6 +19,8 @@ interface EnvironmentInstance {
 const PAGE_SIZE = 200;
 /** Bounds the requests one environment can cost: 10 pages is 2,000 deployments. */
 const MAX_PAGES = 10;
+/** A single run's work items; far more than one run brings in practice. */
+const WORK_ITEMS_PER_RUN = 5000;
 /** Run ids per build lookup request, to keep the URL short. */
 const RUN_IDS_PER_REQUEST = 200;
 
@@ -44,7 +46,7 @@ class PipelineRunService {
      * Reads an environment's records newest first, a page at a time, until `enough` says the rest
      * cannot matter, the records run out, or MAX_PAGES is reached.
      */
-    private async recordsOf(
+    public async recordsOf(
         environment: EnvironmentSummary,
         enough: (page: RawDeploymentRecord[]) => boolean
     ): Promise<RawDeploymentRecord[]> {
@@ -115,6 +117,19 @@ class PipelineRunService {
         }
 
         return pipelinesOfBuilds(builds);
+    }
+
+    /**
+     * The work items a run brought, compared with the pipeline's previous run. The same list the
+     * environment's Work items tab shows, and available while the run is still in progress.
+     */
+    public async workItemsOf(projectId: string, runId: number, previousRunId?: number): Promise<number[]> {
+        const path =
+            previousRunId !== undefined
+                ? `_apis/build/workitems?fromBuildId=${previousRunId}&toBuildId=${runId}&$top=${WORK_ITEMS_PER_RUN}`
+                : `_apis/build/builds/${runId}/workitems?$top=${WORK_ITEMS_PER_RUN}`;
+        const body = await AzdoClient.get<{ value: { id: string }[] }>(path, "7.1-preview.2", projectId);
+        return ((body && body.value) || []).map((item) => Number(item.id));
     }
 
     public async environmentsForPipeline(definitionId: number): Promise<EnvironmentSummary[]> {

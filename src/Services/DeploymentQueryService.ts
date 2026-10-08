@@ -1,52 +1,35 @@
 import * as SDK from "azure-devops-extension-sdk";
 import { IWorkItemFormService, WorkItemTrackingServiceIds } from "azure-devops-extension-api/WorkItemTracking";
 
-import {
-    GroupedDeployments,
-    groupDeployments,
-    mappedEnvironments,
-    relevantConfigs,
-    runIdsFromRelations,
-} from "../Deployments";
-import AzdoClient from "./AzdoClient";
-import PipelineRunService from "./PipelineRunService";
+import { GroupedDeployments, groupDeployments } from "../Deployments";
+import { commitLinksFromRelations } from "../EnvironmentLookup";
+import EnvironmentLookupService from "./EnvironmentLookupService";
 import PipelineConfigService from "./PipelineConfigService";
 
 export { GroupedDeployments, PipelineDeployments } from "../Deployments";
 
 export interface DeploymentsResult {
     groups: GroupedDeployments[];
+    /** The work item has no commit links, so there is nothing to look deployments up by. */
     noBuildLinks: boolean;
 }
 
 class DeploymentQueryService {
-    public async getRunIds(): Promise<number[]> {
-        const formService = await SDK.getService<IWorkItemFormService>(
-            WorkItemTrackingServiceIds.WorkItemFormService
-        );
-        const relations = await formService.getWorkItemRelations();
-        return runIdsFromRelations(relations as any);
-    }
-
     public async getDeployments(): Promise<DeploymentsResult> {
         const configsPromise = PipelineConfigService.getAll();
 
-        const runIds = await this.getRunIds();
-        if (!runIds.length) {
+        const formService = await SDK.getService<IWorkItemFormService>(
+            WorkItemTrackingServiceIds.WorkItemFormService
+        );
+        const [relations, workItemId] = await Promise.all([formService.getWorkItemRelations(), formService.getId()]);
+
+        if (!commitLinksFromRelations(relations as any).length) {
             configsPromise.catch(() => undefined);
             return { groups: [], noBuildLinks: true };
         }
 
-        const [allConfigs, { projectId }] = await Promise.all([configsPromise, AzdoClient.getContext()]);
-        const linkedPipelines = await PipelineRunService.pipelinesOfRuns(runIds);
-        const configs = relevantConfigs(allConfigs, projectId, linkedPipelines);
-        const environments = mappedEnvironments(configs);
-
-        if (!environments.length) {
-            return { groups: [], noBuildLinks: false };
-        }
-
-        const records = await PipelineRunService.deploymentsIn(environments, runIds);
+        const configs = await configsPromise;
+        const records = await EnvironmentLookupService.deployments(workItemId, relations as any, configs);
 
         return { groups: groupDeployments(records, configs), noBuildLinks: false };
     }
