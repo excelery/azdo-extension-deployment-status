@@ -102,6 +102,21 @@ class AzdoClient {
         }
         return response.json();
     }
+
+    /** Diagnostic for the dev test: status and body of a request with the extension token. */
+    public async probe(url: string, body?: unknown): Promise<{ url: string; status: number; body: string }> {
+        const accessToken = await getAccessToken();
+        try {
+            const response = await fetch(url, {
+                method: body ? "POST" : "GET",
+                headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+                body: body ? JSON.stringify(body) : undefined,
+            });
+            return { url, status: response.status, body: (await response.text()).slice(0, 4000) };
+        } catch (error: any) {
+            return { url, status: 0, body: String(error && error.message) };
+        }
+    }
 }
 
 export default new AzdoClient();

@@ -76,6 +76,8 @@ class TraceabilityService {
             // Diagnostic for the dev test.
             console.info(LOG, "environment", environment.environmentId, "pipeline", definitionId, "deployments since created", deploymentsSince(records, definitionId, createdAt).map((record) => record.id));
 
+            await this.probeRoutes(projectId, environment.environmentId, deploymentsSince(records, definitionId, 0));
+
             let brought: RawDeploymentRecord | undefined;
             for (const record of deploymentsSince(records, definitionId, createdAt)) {
                 const ids = await this.workItemsOf(projectId, environment.environmentId, record);
@@ -98,6 +100,27 @@ class TraceabilityService {
             found.push(...toDeploymentRecords(environment, carried, carried.map((record) => record.owner!.id)));
         }
         return found;
+    }
+
+    /** Diagnostic for the dev test: which routes to a deployment's work items accept the extension token. */
+    private async probeRoutes(projectId: string, environmentId: number, deployments: RawDeploymentRecord[]): Promise<void> {
+        const latest = deployments[deployments.length - 1];
+        const previous = deployments[deployments.length - 2];
+        if (!latest || !previous || !latest.owner || !previous.owner) {
+            return;
+        }
+        const { baseUrl } = await AzdoClient.getContext();
+        const body = workItemsQuery(deploymentPageUrl(baseUrl, projectId, environmentId, latest), projectId, environmentId, latest);
+        const results = await Promise.all([
+            AzdoClient.probe(`${baseUrl}/_apis/Contribution/HierarchyQuery/project/${projectId}?api-version=5.0-preview.1`, body),
+            AzdoClient.probe(`${baseUrl}/${projectId}/_apis/Contribution/HierarchyQuery?api-version=5.0-preview.1`, body),
+            AzdoClient.probe(`${baseUrl}/_apis/Contribution/dataProviders/query/project/${projectId}?api-version=5.0-preview.1`, body),
+            AzdoClient.probe(`${baseUrl}/_apis/Contribution/HierarchyQuery?api-version=5.0-preview.1`, body),
+            AzdoClient.probe(
+                `${baseUrl}/${projectId}/_apis/build/workitems?fromBuildId=${previous.owner.id}&toBuildId=${latest.owner.id}&$top=200&api-version=7.1-preview.2`
+            ),
+        ]);
+        console.info(LOG, "PROBE", JSON.stringify(results));
     }
 
     /** One deployment's work items, from the environment's stored history. */
