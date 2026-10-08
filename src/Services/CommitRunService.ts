@@ -92,6 +92,7 @@ class CommitRunService {
             );
             return mergeCommitOf(pullRequest, ref);
         } catch {
+            // Unresolved, by design: the pull request finds no runs on this load, and the next load asks again.
             return undefined;
         }
     }
@@ -140,6 +141,7 @@ class CommitRunService {
                 }
             }
         } catch {
+            // Partial by design: runs from the pages read so far are kept, later ones are not shown.
         }
 
         return builds;
