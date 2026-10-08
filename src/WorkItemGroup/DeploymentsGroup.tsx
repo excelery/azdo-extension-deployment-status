@@ -183,11 +183,11 @@ function PipelineRow(props: { pipeline: PipelineDeployments; urls: Urls }): JSX.
 
             {expanded && (
                 <div className="dsb-runs">
-                    {pipeline.history.map((record, index) => (
+                    {pipeline.history.map((record) => (
                         <div
                             className="dsb-run"
-                            // A rerun stage deploys the same run to the same environment again.
-                            key={`${record.runId}-${record.environmentId}-${record.stageName}-${record.finishTime}-${index}`}
+                            // Only the latest attempt of a rerun stage is kept, so this is unique.
+                            key={`${record.runId}-${record.environmentId}-${record.stageName}`}
                         >
                             <StatusIcon result={record.result} />
                             <a

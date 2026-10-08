@@ -7,6 +7,7 @@ import {
     pipelinesOfBuilds,
     relevantConfigs,
     groupDeployments,
+    latestAttempts,
     mappedEnvironments,
     olderThanRuns,
     orderGroups,
@@ -236,6 +237,50 @@ describe("groupDeployments", () => {
         groupDeployments(input, configs);
 
         expect(input[0].runId).toBe(1);
+    });
+});
+
+describe("latestAttempts", () => {
+    it("keeps only the most recent attempt of a rerun stage", () => {
+        const first = record({ recordId: 1, finishTime: "2026-10-08T10:00:00Z" });
+        const rerun = record({ recordId: 2, finishTime: "2026-10-08T11:00:00Z" });
+
+        expect(latestAttempts([rerun, first])).toEqual([rerun]);
+    });
+
+    it("counts a rerun still in progress as the most recent", () => {
+        const first = record({ recordId: 1 });
+        const rerun = record({ recordId: 2, result: "inProgress", finishTime: "" });
+
+        expect(latestAttempts([first, rerun])).toEqual([rerun]);
+    });
+
+    it("keeps different runs, stages and environments apart", () => {
+        const records = [
+            record(),
+            record({ runId: 101 }),
+            record({ stageName: "Other" }),
+            record({ environmentId: 11 }),
+        ];
+
+        expect(latestAttempts(records)).toHaveLength(4);
+    });
+});
+
+describe("groupDeployments shows a rerun once", () => {
+    it("counts a rerun stage once in the history", () => {
+        const configs = new Map<string, PipelineConfig>([
+            ["proj-1", config({ definitionId: 1, environments: { "10": { enabled: true, deploymentType: "production" } } })],
+        ]);
+        const [group] = groupDeployments(
+            [
+                record({ recordId: 1, finishTime: "2026-10-08T10:00:00Z" }),
+                record({ recordId: 2, finishTime: "2026-10-08T11:00:00Z" }),
+            ],
+            configs
+        );
+
+        expect(group.pipelines[0].history.map((r) => r.recordId)).toEqual([2]);
     });
 });
 
