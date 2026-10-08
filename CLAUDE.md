@@ -125,9 +125,23 @@ one on the default branch, so it cannot review the pull request that introduces 
 - **An environment deployment's Changes and Work items tabs stay empty unless the deployment job runs
   `- checkout: self`** (verified). Deployment jobs check out nothing by default. The extension doesn't
   depend on those tabs, but run links open that page, so users notice.
-- **The whole thing hinges on `Automatically link work items included in this run`.** With that pipeline
-  setting off there are no build links and nothing to join on. `DeploymentsResult.noBuildLinks` exists so
-  the empty state can say that rather than "no deployments".
+- **Runs come from two sources, combined.** Completed runs are the Integrated in build links. Those
+  appear only when a run completes, so they never show a run waiting on an approval. For runs in
+  progress, `InProgressRunService` takes the repositories of the work item's commit and pull request
+  links, lists their runs in progress (`statusFilter=inProgress`, only pipelines with Boards Integration
+  enabled), and keeps a run when `builds/{id}/workitems` lists the work item: the list Azure DevOps
+  makes the build link from, so no ancestry is computed here (verified on a run waiting for approval,
+  and against the links of completed runs). The list is computed from the last successful run as of
+  now, so a link can still differ when another run succeeds first. Only the repository's own project
+  is searched, and Azure Repos only. `DeploymentsResult.noRuns` lets the empty state ask for automatic
+  linking when neither source found anything.
+- **A stage waiting for an approval has no deployment record.** The run's timeline shows it: a
+  `Checkpoint.Approval` record in progress under the stage. It is placed in the environment where the
+  pipeline's most recent record for the same stage name is, across all mapped environments, since a
+  stage can deploy to different environments over time. A stage that never deployed is not shown.
+  The earlier record is looked up only in the pages already read for the work item's runs (at least
+  the newest 200 per environment). Paging further to find it would cost up to `MAX_PAGES` per mapped
+  environment for a stage that never deployed there, so it is deliberately not done.
 - **Config keys on the environment id**, with the environment name copied in on save so the work item
   control can label a deployment without listing environments at render time. Only mapped environments
   are queried, which bounds the request count.
@@ -148,10 +162,10 @@ one on the default branch, so it cannot review the pull request that introduces 
 Work test-first: `.claude/skills/tdd/SKILL.md` has the workflow and, more usefully, the boundary of what
 unit tests can and cannot reach in this codebase.
 
-`npm test` (vitest). The suite covers `src/Deployments.ts`, which is where the decisions live: build-link
-parsing, result mapping, environment filtering, grouping and ordering. It is deliberately free of SDK
-imports so it runs in plain Node; the services are thin wrappers that fetch and delegate to it. Put new
-logic there rather than in a service, or it cannot be tested.
+`npm test` (vitest). The suite covers `src/Deployments.ts` and `src/InProgressRuns.ts`, which is where the
+decisions live: link parsing, run matching, result mapping, environment filtering, grouping and ordering.
+Both are deliberately free of SDK imports so they run in plain Node; the services are thin wrappers that
+fetch and delegate to them. Put new logic there rather than in a service, or it cannot be tested.
 
 CI runs it before the build and publishes JUnit results, so a failure fails the run.
 

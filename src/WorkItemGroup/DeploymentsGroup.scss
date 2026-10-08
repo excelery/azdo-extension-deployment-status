@@ -98,6 +98,19 @@ body {
   margin-right: 8px;
 }
 
+/* As azure-devops-ui's Status animates its running arcs: an inner <g>, so the icon stays sharp. */
+.dsb-status-running-arcs {
+  animation: dsb-running 8s infinite linear;
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+}
+
+@keyframes dsb-running {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .dsb-chevron {
   align-items: center;
   color: rgba(var(--palette-neutral-100, 0, 0, 0), 0.55);

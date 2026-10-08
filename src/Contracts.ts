@@ -41,7 +41,16 @@ export interface DeploymentRecord {
     pipelineName: string;
     runId: number;
     runName: string;
-    result: "succeeded" | "failed" | "canceled" | "skipped" | "partiallySucceeded" | "inProgress" | "unknown";
+    result:
+        | "succeeded"
+        | "failed"
+        | "canceled"
+        | "skipped"
+        | "partiallySucceeded"
+        | "inProgress"
+        | "waitingForApproval"
+        | "unknown";
+    /** Empty while unfinished. */
     finishTime: string;
 }
 

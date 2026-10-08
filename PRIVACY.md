@@ -12,7 +12,7 @@ telemetry and no third-party services.
 | Data | Scope |
 |---|---|
 | Links on the open work item | `vso.work` (read) |
-| Environments and deployment records | `vso.build` (read) |
+| Runs, environments and deployment records | `vso.build` (read) |
 
 ## Data stored
 

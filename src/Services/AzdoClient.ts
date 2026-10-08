@@ -51,8 +51,9 @@ class AzdoClient {
         return this.context;
     }
 
-    public async get<T>(path: string, apiVersion = "7.1"): Promise<T | undefined> {
-        return (await this.getPage<T>(path, apiVersion)).body;
+    /** `project` is a project name or id; it defaults to the current project. */
+    public async get<T>(path: string, apiVersion = "7.1", project?: string): Promise<T | undefined> {
+        return (await this.getPage<T>(path, apiVersion, project)).body;
     }
 
     /** `project` is a project name or id; it defaults to the current project. */

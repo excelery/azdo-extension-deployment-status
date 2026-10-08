@@ -24,7 +24,7 @@ re-approve the extension in every org, and anything `_manage` triggers *"This ex
 privilege scopes"* at install. If a diff adds a scope, ask whether another API route avoids it — that
 has worked before. Verify with the `verify-live` skill rather than accepting the reasoning.
 
-**Logic lives in `src/Deployments.ts`.** It imports no SDK so it can be tested. Logic that drifts into a
+**Logic lives in `src/Deployments.ts` and `src/InProgressRuns.ts`.** It imports no SDK so it can be tested. Logic that drifts into a
 service becomes untestable in practice. If a PR adds branching to a service, a pure function is usually
 hiding in it.
 
@@ -80,7 +80,7 @@ Ask for evidence rather than inferring:
 - Does it render correctly, in both themes, at the real column width?
 - Does the control still size itself to its content?
 - Does it behave when the pipeline has never deployed, when a build has been deleted, when the work item
-  has no build links?
+  has no build links, or only commit links to a run still in progress?
 
 The expensive bugs here were all in this category. If the PR touches the control or the panel, ask for a
 screenshot or verify with `verify-live`.

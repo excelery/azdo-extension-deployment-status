@@ -222,6 +222,28 @@ export function mappedEnvironments(configs: Map<string, PipelineConfig>): Enviro
     return Array.from(mapped.values());
 }
 
+/**
+ * A rerun stage deploys the same run to the same environment again, as a new record. Only its most
+ * recent attempt is kept, so a run shows once per stage and environment.
+ */
+export function latestAttempts(records: DeploymentRecord[]): DeploymentRecord[] {
+    const latest = new Map<string, DeploymentRecord>();
+    for (const record of records) {
+        const key = `${record.runId}/${record.environmentId}/${record.stageName}`;
+        const kept = latest.get(key);
+        if (!kept || isLaterAttempt(record, kept)) {
+            latest.set(key, record);
+        }
+    }
+    return Array.from(latest.values());
+}
+
+/** Newer first, as `byMostRecent`; attempts finished at the same time fall back to the record id. */
+function isLaterAttempt(a: DeploymentRecord, b: DeploymentRecord): boolean {
+    const order = byMostRecent(a, b);
+    return order < 0 || (order === 0 && a.recordId > b.recordId);
+}
+
 export function groupDeployments(
     records: DeploymentRecord[],
     configs: Map<string, PipelineConfig>
@@ -251,9 +273,7 @@ export function groupDeployments(
         const pipelines: PipelineDeployments[] = [];
 
         byPipeline.forEach((pipelineRecords) => {
-            const history = pipelineRecords
-                .slice()
-                .sort(byMostRecent);
+            const history = latestAttempts(pipelineRecords).sort(byMostRecent);
             pipelines.push({
                 projectId: history[0].projectId,
                 definitionId: history[0].definitionId,
