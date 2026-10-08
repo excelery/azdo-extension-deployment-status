@@ -98,6 +98,22 @@ body {
   margin-right: 8px;
 }
 
+.dsb-status--running {
+  animation: dsb-spin 1s linear infinite;
+}
+
+@keyframes dsb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dsb-status--running {
+    animation: none;
+  }
+}
+
 .dsb-chevron {
   align-items: center;
   color: rgba(var(--palette-neutral-100, 0, 0, 0), 0.55);

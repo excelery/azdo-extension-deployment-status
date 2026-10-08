@@ -45,16 +45,43 @@ const ICON_FILL: Record<Status, string> = {
     waiting: "#0078D4",
 };
 
-const ICON_PATH: Record<Status, string> = {
+/** The running icon is drawn separately, as a spinner. */
+const ICON_PATH: Record<Exclude<Status, "inProgress">, string> = {
     succeeded: "M6.7 11.3 3.9 8.5l1-1 1.8 1.8 4.4-4.4 1 1z",
     failed: "M11.1 6 9.1 8l2 2-1.1 1.1-2-2-2 2L4.9 10l2-2-2-2L6 4.9l2 2 2-2z",
     neutral: "M4.5 7.25h7v1.5h-7z",
-    inProgress: "M7.25 4h1.5v3.7l2.6 1.5-.75 1.3-3.35-1.95z",
     waiting: "M5.5 4.5h1.75v7H5.5zm3.25 0h1.75v7H8.75z",
 };
 
 function StatusIcon(props: { result: DeploymentRecord["result"] }): JSX.Element {
     const { status, label } = STATUS[props.result] || STATUS.unknown;
+
+    if (status === "inProgress") {
+        // Spins like the built-in in-progress icon while the deployment runs.
+        return (
+            <svg
+                className="dsb-status dsb-status--running"
+                viewBox="0 0 16 16"
+                width="14"
+                height="14"
+                role="img"
+                aria-label={label}
+                focusable="false"
+            >
+                <title>{label}</title>
+                <circle
+                    cx="8"
+                    cy="8"
+                    r="6.5"
+                    fill="none"
+                    stroke={ICON_FILL.inProgress}
+                    strokeOpacity="0.25"
+                    strokeWidth="3"
+                />
+                <path d="M8 1.5A6.5 6.5 0 0 1 14.5 8" fill="none" stroke={ICON_FILL.inProgress} strokeWidth="3" />
+            </svg>
+        );
+    }
 
     return (
         <svg
@@ -71,6 +98,14 @@ function StatusIcon(props: { result: DeploymentRecord["result"] }): JSX.Element 
             <path d={ICON_PATH[status]} fill="#FFFFFF" />
         </svg>
     );
+}
+
+/** What the subtitle says before " on <environment>": the time, or the state of an unfinished deployment. */
+function whenOf(record: DeploymentRecord): string {
+    if (record.result === "inProgress" || record.result === "waitingForApproval") {
+        return STATUS[record.result].label;
+    }
+    return relativeTime(record.finishTime);
 }
 
 function PipelineRow(props: { pipeline: PipelineDeployments; urls: Urls }): JSX.Element {
@@ -106,10 +141,7 @@ function PipelineRow(props: { pipeline: PipelineDeployments; urls: Urls }): JSX.
                         {pipeline.pipelineName} ({pipeline.history.length})
                     </a>
                     <span className="dsb-pipeline-subtitle">
-                        {latest.result === "waitingForApproval"
-                            ? STATUS.waitingForApproval.label
-                            : relativeTime(latest.finishTime)}{" "}
-                        on {latest.environmentName || latest.stageName}
+                        {whenOf(latest)} on {latest.environmentName || latest.stageName}
                     </span>
                 </span>
                 <span className={`dsb-chevron ${expanded ? "dsb-chevron--open" : ""}`} aria-hidden="true">
