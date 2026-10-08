@@ -139,6 +139,9 @@ one on the default branch, so it cannot review the pull request that introduces 
   `Checkpoint.Approval` record in progress under the stage. It is placed in the environment where the
   pipeline's most recent record for the same stage name is, across all mapped environments, since a
   stage can deploy to different environments over time. A stage that never deployed is not shown.
+  The earlier record is looked up only in the pages already read for the work item's runs (at least
+  the newest 200 per environment). Paging further to find it would cost up to `MAX_PAGES` per mapped
+  environment for a stage that never deployed there, so it is deliberately not done.
 - **Config keys on the environment id**, with the environment name copied in on save so the work item
   control can label a deployment without listing environments at render time. Only mapped environments
   are queried, which bounds the request count.
