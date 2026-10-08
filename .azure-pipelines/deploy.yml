@@ -106,3 +106,25 @@ jobs:
             ${{ if ne(parameters.environment, 'prod') }}:
               extensionTag: '-${{ parameters.environment }}'
             extensionVersion: '$(Build.BuildNumber)'
+
+        # One GitHub release per prod publish, tagged on the commit that was built.
+        # The notes list the commits (squashed pull request titles) since the last release.
+        - ${{ if eq(parameters.environment, 'prod') }}:
+          - task: GitHubRelease@1
+            displayName: Create GitHub release
+            inputs:
+              gitHubConnection: '$(githubConnection)'
+              repositoryName: '$(githubRepository)'
+              action: create
+              target: '$(Build.SourceVersion)'
+              tagSource: userSpecifiedTag
+              tag: 'v$(Build.BuildNumber)'
+              title: 'v$(Build.BuildNumber)'
+              releaseNotesSource: inline
+              releaseNotesInline: 'Published to the Visual Studio Marketplace as version $(Build.BuildNumber).'
+              # Users install from the Marketplace; no package is attached.
+              assets: ''
+              isPreRelease: true
+              addChangeLog: true
+              changeLogCompareToRelease: lastNonDraftRelease
+              changeLogType: commitBased
