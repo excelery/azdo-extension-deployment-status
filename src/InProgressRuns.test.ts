@@ -118,11 +118,15 @@ describe("stagesWaitingForApproval", () => {
 describe("waitingDeployments", () => {
     const run = { id: 2205, buildNumber: "20261008.1", project: { id: PROJECT }, definition: { id: 27, name: "Web" } };
     const stages = waitingStagesOf(run, ["Prod"]);
-    const environment = { projectId: PROJECT, environmentId: 22, environmentName: "prod" };
+    const prod = { projectId: PROJECT, environmentId: 22, environmentName: "prod" };
+    const oldProd = { projectId: PROJECT, environmentId: 21, environmentName: "old-prod" };
+
+    function record(id: number, finishTime: string, stageName = "Prod", definitionId = 27) {
+        return { id, stageName, finishTime, definition: { id: definitionId, name: "Web" }, owner: { id: id, name: "x" } };
+    }
 
     it("places a waiting stage where the pipeline last deployed the same stage", () => {
-        const raw = [{ id: 1100, stageName: "Prod", definition: { id: 27, name: "Web" }, owner: { id: 2190, name: "x" } }];
-        expect(waitingDeployments(stages, environment, raw)).toEqual([
+        expect(waitingDeployments(stages, [{ environment: prod, raw: [record(1100, "2026-10-01T10:00:00Z")] }])).toEqual([
             {
                 projectId: PROJECT,
                 environmentId: 22,
@@ -139,12 +143,30 @@ describe("waitingDeployments", () => {
         ]);
     });
 
+    it("places it only in the environment of the most recent record for the stage", () => {
+        const placed = waitingDeployments(stages, [
+            { environment: oldProd, raw: [record(900, "2026-07-01T10:00:00Z")] },
+            { environment: prod, raw: [record(1100, "2026-10-01T10:00:00Z")] },
+        ]);
+        expect(placed.map((deployment) => deployment.environmentId)).toEqual([22]);
+    });
+
+    it("counts an unfinished record as most recent", () => {
+        const placed = waitingDeployments(stages, [
+            { environment: oldProd, raw: [record(1200, "")] },
+            { environment: prod, raw: [record(1100, "2026-10-01T10:00:00Z")] },
+        ]);
+        expect(placed.map((deployment) => deployment.environmentId)).toEqual([21]);
+    });
+
     it("skips environments the stage never deployed to", () => {
-        const otherStage = [{ stageName: "Test", definition: { id: 27, name: "Web" } }];
-        const otherPipeline = [{ stageName: "Prod", definition: { id: 28, name: "Api" } }];
-        expect(waitingDeployments(stages, environment, otherStage)).toEqual([]);
-        expect(waitingDeployments(stages, environment, otherPipeline)).toEqual([]);
-        expect(waitingDeployments(stages, { ...environment, projectId: OTHER_PROJECT }, otherPipeline)).toEqual([]);
+        const otherStage = [record(1, "2026-10-01T10:00:00Z", "Test")];
+        const otherPipeline = [record(2, "2026-10-01T10:00:00Z", "Prod", 28)];
+        expect(waitingDeployments(stages, [{ environment: prod, raw: otherStage }])).toEqual([]);
+        expect(waitingDeployments(stages, [{ environment: prod, raw: otherPipeline }])).toEqual([]);
+        expect(
+            waitingDeployments(stages, [{ environment: { ...prod, projectId: OTHER_PROJECT }, raw: [record(3, "")] }])
+        ).toEqual([]);
     });
 
     it("needs the run's project and pipeline", () => {

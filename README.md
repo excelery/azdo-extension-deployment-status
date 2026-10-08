@@ -11,7 +11,7 @@ Runs are found in two ways:
 - Completed runs: the work item's Integrated in build links.
 - Runs in progress, for example waiting for an approval: Integrated in build links are only added when a run completes. The extension takes the repositories of the work item's commit and pull request links (Azure Repos), lists their runs in progress for pipelines with Boards Integration enabled, and keeps the runs whose work items, as Azure DevOps lists them for the run, include this work item. These are the runs that will get the Integrated in build link when they complete.
 
-For each run, deployments are read from the environments mapped in the pipeline's Boards Integration. A stage of a run in progress that waits for an approval is shown as Waiting for approval, in the environment that stage deployed to before.
+For each run, deployments are read from the environments mapped in the pipeline's Boards Integration. A stage of a run in progress that waits for an approval is shown as Waiting for approval, in the environment that stage last deployed to.
 
 The extension does not write data to work items; it only reads existing links. Uninstalling it will not affect your work items or any existing data.
 

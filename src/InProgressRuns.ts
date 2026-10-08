@@ -141,41 +141,65 @@ export function waitingStagesOf(run: InProgressBuild, stageNames: string[]): Wai
     }));
 }
 
-/**
- * A stage that has not run yet has no deployment record, so its environment is not known. It is
- * placed in the environment where the pipeline's latest record for the same stage is. A stage that
- * never deployed before is not shown.
- */
-export function waitingDeployments(
-    stages: WaitingStage[],
-    environment: EnvironmentSummary,
-    raw: RawDeploymentRecord[]
-): DeploymentRecord[] {
-    const projectId = environment.projectId || "";
+/** An environment and its deployment records, as read. */
+export interface EnvironmentRecords {
+    environment: EnvironmentSummary;
+    raw: RawDeploymentRecord[];
+}
 
-    return stages
-        .filter(
-            (stage) =>
-                stage.projectId === projectId &&
-                (raw || []).some(
-                    (record) =>
-                        !!record &&
-                        !!record.definition &&
-                        record.definition.id === stage.definitionId &&
-                        record.stageName === stage.stageName
-                )
-        )
-        .map((stage) => ({
-            projectId,
-            environmentId: environment.environmentId,
-            recordId: 0,
-            environmentName: environment.environmentName,
-            stageName: stage.stageName,
-            definitionId: stage.definitionId,
-            pipelineName: stage.pipelineName,
-            runId: stage.runId,
-            runName: stage.runName,
-            result: "waitingForApproval" as const,
-            finishTime: "",
-        }));
+/**
+ * A stage that has not run yet has no deployment record, so its environment is not known. A stage can
+ * deploy to different environments over time, so it is placed only in the environment of the
+ * pipeline's most recent record for the same stage. A stage that never deployed before is not shown.
+ */
+export function waitingDeployments(stages: WaitingStage[], environments: EnvironmentRecords[]): DeploymentRecord[] {
+    const placed: DeploymentRecord[] = [];
+
+    for (const stage of stages) {
+        let latest: { environment: EnvironmentSummary; record: RawDeploymentRecord } | undefined;
+
+        for (const { environment, raw } of environments) {
+            if ((environment.projectId || "") !== stage.projectId) {
+                continue;
+            }
+            for (const record of raw || []) {
+                const sameStage =
+                    !!record &&
+                    !!record.definition &&
+                    record.definition.id === stage.definitionId &&
+                    record.stageName === stage.stageName;
+                if (sameStage && (!latest || isMoreRecent(record, latest.record))) {
+                    latest = { environment, record };
+                }
+            }
+        }
+
+        if (latest) {
+            placed.push({
+                projectId: stage.projectId,
+                environmentId: latest.environment.environmentId,
+                recordId: 0,
+                environmentName: latest.environment.environmentName,
+                stageName: stage.stageName,
+                definitionId: stage.definitionId,
+                pipelineName: stage.pipelineName,
+                runId: stage.runId,
+                runName: stage.runName,
+                result: "waitingForApproval",
+                finishTime: "",
+            });
+        }
+    }
+
+    return placed;
+}
+
+/** An unfinished record counts as most recent; ties fall back to the record id. */
+function isMoreRecent(a: RawDeploymentRecord, b: RawDeploymentRecord): boolean {
+    const aTime = (a.finishTime && Date.parse(a.finishTime)) || Number.POSITIVE_INFINITY;
+    const bTime = (b.finishTime && Date.parse(b.finishTime)) || Number.POSITIVE_INFINITY;
+    if (aTime !== bTime) {
+        return aTime > bTime;
+    }
+    return (a.id || 0) > (b.id || 0);
 }

@@ -137,7 +137,8 @@ one on the default branch, so it cannot review the pull request that introduces 
   linking when neither source found anything.
 - **A stage waiting for an approval has no deployment record.** The run's timeline shows it: a
   `Checkpoint.Approval` record in progress under the stage. It is placed in the environment where the
-  pipeline's latest record for the same stage name is; a stage that never deployed is not shown.
+  pipeline's most recent record for the same stage name is, across all mapped environments, since a
+  stage can deploy to different environments over time. A stage that never deployed is not shown.
 - **Config keys on the environment id**, with the environment name copied in on save so the work item
   control can label a deployment without listing environments at render time. Only mapped environments
   are queried, which bounds the request count.

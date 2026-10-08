@@ -84,16 +84,18 @@ class PipelineRunService {
             return [];
         }
 
-        const perEnvironment = await Promise.all(
-            environments.map(async (environment) => {
-                const raw = await this.recordsOf(environment, (page) => olderThanRuns(page, runIds));
-                return toDeploymentRecords(environment, raw, runIds).concat(
-                    waitingDeployments(waiting, environment, raw)
-                );
-            })
+        const read = await Promise.all(
+            environments.map(async (environment) => ({
+                environment,
+                raw: await this.recordsOf(environment, (page) => olderThanRuns(page, runIds)),
+            }))
         );
 
-        return perEnvironment.reduce((all, some) => all.concat(some), []);
+        const deployments = read.reduce(
+            (all, { environment, raw }) => all.concat(toDeploymentRecords(environment, raw, runIds)),
+            [] as DeploymentRecord[]
+        );
+        return deployments.concat(waitingDeployments(waiting, read));
     }
 
     /**
