@@ -90,8 +90,9 @@ one on the default branch, so it cannot review the pull request that introduces 
   Scoping anything to the work item's project hides cross-project deployments. The link holds only
   `vstfs:///Build/Build/<id>`. Listing builds through the work item's project with `?buildIds=` returns
   runs from other projects too, with their project ids; `GET builds/{id}` does not. One such request
-  finds the linked pipelines, and only their environments are read. The work item's own project is
-  always read, which also covers runs deleted by retention.
+  finds the linked pipelines, and only their environments are read (`configsOf` in `Runs.ts`). A run
+  deleted by retention is not returned, so its pipeline is unknown; only then is every mapped
+  environment of the work item's own project read too, since deployment records survive retention.
 - **Deployments come from environment deployment records, not build timelines.** Records outlive the
   runs they describe: in a real project, 70 of 110 referenced runs had been deleted by retention while
   every record survived, and `getBuildTimeline` 404s for exactly those. Reading timelines made
@@ -127,7 +128,7 @@ one on the default branch, so it cannot review the pull request that introduces 
   depend on those tabs, but run links open that page, so users notice.
 - **Runs come from two sources, combined.** Completed runs are the Integrated in build links. Those
   appear only when a run completes, so they never show a run waiting on an approval. For runs in
-  progress, `InProgressRunService` takes the repositories of the work item's commit and pull request
+  progress, `RunService.runningRuns` takes the repositories of the work item's commit and pull request
   links, lists their runs in progress (`statusFilter=inProgress`, only pipelines with Boards Integration
   enabled), and keeps a run when `builds/{id}/workitems` lists the work item: the list Azure DevOps
   makes the build link from, so no ancestry is computed here (verified on a run waiting for approval,
@@ -166,7 +167,7 @@ one on the default branch, so it cannot review the pull request that introduces 
 Work test-first: `.claude/skills/tdd/SKILL.md` has the workflow and, more usefully, the boundary of what
 unit tests can and cannot reach in this codebase.
 
-`npm test` (vitest). The suite covers `src/Deployments.ts` and `src/InProgressRuns.ts`, which is where the
+`npm test` (vitest). The suite covers `src/Deployments.ts` and `src/Runs.ts`, which is where the
 decisions live: link parsing, run matching, result mapping, environment filtering, grouping and ordering.
 Both are deliberately free of SDK imports so they run in plain Node; the services are thin wrappers that
 fetch and delegate to them. Put new logic there rather than in a service, or it cannot be tested.

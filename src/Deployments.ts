@@ -5,6 +5,7 @@ import {
     PipelineConfig,
     mappingFor,
 } from "./Contracts";
+import type { Run } from "./Runs";
 
 export interface PipelineDeployments {
     projectId: string;
@@ -40,9 +41,6 @@ export interface EnvironmentSummary {
     environmentId: number;
     environmentName: string;
 }
-
-const BUILD_ARTIFACT = /^vstfs:\/\/\/Build\/Build\/(\d+)$/i;
-const BUILD_LINK_NAME = "Integrated in build";
 
 const RESULTS: Record<string, DeploymentRecord["result"]> = {
     succeeded: "succeeded",
@@ -105,42 +103,6 @@ export function configsByPipeline(documents: PipelineConfig[]): Map<string, Pipe
     return configs;
 }
 
-export interface LinkedBuild {
-    id: number;
-    project?: { id: string };
-    definition?: { id: number };
-}
-
-/** The pipelines, as `<projectId>-<definitionId>` keys, that built the linked runs. */
-export function pipelinesOfBuilds(builds: LinkedBuild[]): Set<string> {
-    const pipelines = new Set<string>();
-    for (const build of builds || []) {
-        if (build && build.project && build.project.id && build.definition) {
-            pipelines.add(pipelineKey(build.project.id, build.definition.id));
-        }
-    }
-    return pipelines;
-}
-
-/**
- * The configs worth querying for a work item. The work item's own project is always kept, so runs
- * the build lookup no longer returns (deleted by retention) still show. Other projects are kept
- * only for the pipelines that built one of the linked runs.
- */
-export function relevantConfigs(
-    configs: Map<string, PipelineConfig>,
-    currentProjectId: string,
-    linkedPipelines: Set<string>
-): Map<string, PipelineConfig> {
-    const relevant = new Map<string, PipelineConfig>();
-    configs.forEach((config, key) => {
-        if (projectIdOf(config) === currentProjectId || linkedPipelines.has(key)) {
-            relevant.set(key, config);
-        }
-    });
-    return relevant;
-}
-
 /**
  * Deployment records come newest first. Once a whole page belongs to runs older than every run the
  * work item links to, later pages cannot hold a wanted record, so paging can stop.
@@ -151,26 +113,6 @@ export function olderThanRuns(page: RawDeploymentRecord[], runIds: number[]): bo
     }
     const oldestWanted = Math.min(...runIds);
     return page.every((record) => !!record && !!record.owner && record.owner.id < oldestWanted);
-}
-
-export function runIdsFromRelations(relations: WorkItemRelation[]): number[] {
-    const runIds = new Set<number>();
-
-    for (const relation of relations || []) {
-        if (!relation || relation.rel !== "ArtifactLink") {
-            continue;
-        }
-        const attributes = relation.attributes || {};
-        if (attributes.name !== BUILD_LINK_NAME) {
-            continue;
-        }
-        const match = BUILD_ARTIFACT.exec(relation.url || "");
-        if (match) {
-            runIds.add(Number(match[1]));
-        }
-    }
-
-    return Array.from(runIds);
 }
 
 export function toDeploymentRecords(
@@ -195,6 +137,74 @@ export function toDeploymentRecords(
             result: resultOf(record),
             finishTime: record.finishTime || "",
         }));
+}
+
+/** An environment and its deployment records, as read. */
+export interface EnvironmentRecords {
+    environment: EnvironmentSummary;
+    raw: RawDeploymentRecord[];
+}
+
+/**
+ * A stage waiting for an approval has no deployment record, so its environment is not known. A stage
+ * can deploy to different environments over time, so it is placed only in the environment of the
+ * pipeline's most recent record for the same stage. A stage that never deployed before is not shown.
+ */
+export function waitingDeployments(runs: Run[], environments: EnvironmentRecords[]): DeploymentRecord[] {
+    const placed: DeploymentRecord[] = [];
+
+    for (const run of runs) {
+        const pipeline = run.pipeline;
+        if (!pipeline) {
+            continue;
+        }
+        for (const stageName of run.waitingStages) {
+            let latest: { environment: EnvironmentSummary; record: RawDeploymentRecord } | undefined;
+            for (const { environment, raw } of environments) {
+                if ((environment.projectId || "") !== pipeline.projectId) {
+                    continue;
+                }
+                for (const record of raw || []) {
+                    const sameStage =
+                        !!record &&
+                        !!record.definition &&
+                        record.definition.id === pipeline.definitionId &&
+                        record.stageName === stageName;
+                    if (sameStage && (!latest || isMoreRecent(record, latest.record))) {
+                        latest = { environment, record };
+                    }
+                }
+            }
+
+            if (latest) {
+                placed.push({
+                    projectId: pipeline.projectId,
+                    environmentId: latest.environment.environmentId,
+                    recordId: 0,
+                    environmentName: latest.environment.environmentName,
+                    stageName,
+                    definitionId: pipeline.definitionId,
+                    pipelineName: pipeline.name,
+                    runId: run.id,
+                    runName: run.name,
+                    result: "waitingForApproval",
+                    finishTime: "",
+                });
+            }
+        }
+    }
+
+    return placed;
+}
+
+/** An unfinished record counts as most recent; ties fall back to the record id. */
+function isMoreRecent(a: RawDeploymentRecord, b: RawDeploymentRecord): boolean {
+    const aTime = (a.finishTime && Date.parse(a.finishTime)) || Number.POSITIVE_INFINITY;
+    const bTime = (b.finishTime && Date.parse(b.finishTime)) || Number.POSITIVE_INFINITY;
+    if (aTime !== bTime) {
+        return aTime > bTime;
+    }
+    return (a.id || 0) > (b.id || 0);
 }
 
 export function mappedEnvironments(configs: Map<string, PipelineConfig>): EnvironmentSummary[] {
