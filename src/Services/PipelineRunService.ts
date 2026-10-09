@@ -1,14 +1,14 @@
 import AzdoClient from "./AzdoClient";
-import { DeploymentRecord } from "../Contracts";
+import { DeploymentRecord, PipelineConfig } from "../Contracts";
 import {
     EnvironmentSummary,
-    LinkedBuild,
     RawDeploymentRecord,
+    mappedEnvironments,
     olderThanRuns,
-    pipelinesOfBuilds,
     toDeploymentRecords,
+    waitingDeployments,
 } from "../Deployments";
-import { WaitingStage, waitingDeployments } from "../InProgressRuns";
+import { Run, mapLimited } from "../Runs";
 
 export { EnvironmentSummary } from "../Deployments";
 
@@ -20,8 +20,8 @@ interface EnvironmentInstance {
 const PAGE_SIZE = 200;
 /** Bounds the requests one environment can cost: 10 pages is 2,000 deployments. */
 const MAX_PAGES = 10;
-/** Run ids per build lookup request, to keep the URL short. */
-const RUN_IDS_PER_REQUEST = 200;
+/** Environments read at once. */
+const CONCURRENT_REQUESTS = 6;
 
 class PipelineRunService {
     private environments: Promise<EnvironmentSummary[]> | undefined;
@@ -74,51 +74,24 @@ class PipelineRunService {
         return records;
     }
 
-    /** The runs' deployments, and their stages waiting for an approval, in the environments. */
-    public async deploymentsIn(
-        environments: EnvironmentSummary[],
-        runIds: number[],
-        waiting: WaitingStage[] = []
-    ): Promise<DeploymentRecord[]> {
-        if (!environments.length || !runIds.length) {
-            return [];
-        }
+    /**
+     * The runs' deployments in the environments the configs map, and their stages waiting for an
+     * approval.
+     */
+    public async deploymentsOf(runs: Run[], configs: Map<string, PipelineConfig>): Promise<DeploymentRecord[]> {
+        const environments = mappedEnvironments(configs);
+        const runIds = runs.map((run) => run.id);
 
-        const read = await Promise.all(
-            environments.map(async (environment) => ({
-                environment,
-                raw: await this.recordsOf(environment, (page) => olderThanRuns(page, runIds)),
-            }))
-        );
+        const read = await mapLimited(environments, CONCURRENT_REQUESTS, async (environment) => ({
+            environment,
+            raw: await this.recordsOf(environment, (page) => olderThanRuns(page, runIds)),
+        }));
 
         const deployments = read.reduce(
             (all, { environment, raw }) => all.concat(toDeploymentRecords(environment, raw, runIds)),
             [] as DeploymentRecord[]
         );
-        return deployments.concat(waitingDeployments(waiting, read));
-    }
-
-    /**
-     * The pipelines, as `<projectId>-<definitionId>` keys, that built the linked runs. Listing builds
-     * by id through the work item's project also returns runs from other projects, each with its
-     * own project id; getting a single build by id does not. A run that is not returned is simply
-     * not resolved, which never hides deployments found through the work item's own project.
-     */
-    public async pipelinesOfRuns(runIds: number[]): Promise<Set<string>> {
-        const builds: LinkedBuild[] = [];
-
-        for (let start = 0; start < runIds.length; start += RUN_IDS_PER_REQUEST) {
-            const ids = runIds.slice(start, start + RUN_IDS_PER_REQUEST).join(",");
-            try {
-                const body = await AzdoClient.get<{ value: LinkedBuild[] }>(
-                    `_apis/build/builds?buildIds=${ids}&deletedFilter=includeDeleted`
-                );
-                builds.push(...((body && body.value) || []));
-            } catch {
-            }
-        }
-
-        return pipelinesOfBuilds(builds);
+        return deployments.concat(waitingDeployments(runs, read));
     }
 
     public async environmentsForPipeline(definitionId: number): Promise<EnvironmentSummary[]> {

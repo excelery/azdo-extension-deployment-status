@@ -4,16 +4,14 @@ import { DeploymentRecord, PipelineConfig, mappingFor } from "./Contracts";
 import {
     byMostRecent,
     configsByPipeline,
-    pipelinesOfBuilds,
-    relevantConfigs,
     groupDeployments,
     latestAttempts,
     mappedEnvironments,
     olderThanRuns,
     orderGroups,
     relativeTime,
-    runIdsFromRelations,
     toDeploymentRecords,
+    waitingDeployments,
 } from "./Deployments";
 
 function config(overrides: Partial<PipelineConfig> = {}): PipelineConfig {
@@ -42,50 +40,6 @@ function record(overrides: Partial<DeploymentRecord> = {}): DeploymentRecord {
         ...overrides,
     };
 }
-
-describe("runIdsFromRelations", () => {
-    const link = (url: string, name = "Integrated in build") => ({
-        rel: "ArtifactLink",
-        url,
-        attributes: { name },
-    });
-
-    it("reads build ids from Integrated in build links", () => {
-        expect(runIdsFromRelations([link("vstfs:///Build/Build/42")])).toEqual([42]);
-    });
-
-    it("ignores other artifact link types", () => {
-        const relations = [
-            link("vstfs:///Build/Build/1", "Build"),
-            link("vstfs:///Build/Build/2", "Found in build"),
-            link("vstfs:///Git/Commit/abc", "Fixed in Commit"),
-        ];
-        expect(runIdsFromRelations(relations)).toEqual([]);
-    });
-
-    it("ignores non-artifact relations", () => {
-        expect(runIdsFromRelations([{ rel: "System.LinkTypes.Related", url: "x" }])).toEqual([]);
-    });
-
-    it("de-duplicates repeated build ids", () => {
-        const relations = [link("vstfs:///Build/Build/7"), link("vstfs:///Build/Build/7")];
-        expect(runIdsFromRelations(relations)).toEqual([7]);
-    });
-
-    it("rejects malformed artifact uris", () => {
-        const relations = [
-            link("vstfs:///Build/Build/"),
-            link("vstfs:///Build/Build/abc"),
-            link("vstfs:///Build/Build/12/extra"),
-        ];
-        expect(runIdsFromRelations(relations)).toEqual([]);
-    });
-
-    it("survives missing attributes and empty input", () => {
-        expect(runIdsFromRelations([{ rel: "ArtifactLink", url: "vstfs:///Build/Build/1" }])).toEqual([]);
-        expect(runIdsFromRelations([])).toEqual([]);
-    });
-});
 
 describe("toDeploymentRecords", () => {
     const environment = { environmentId: 10, environmentName: "prod" };
@@ -464,33 +418,8 @@ describe("record id", () => {
     });
 });
 
-describe("relevantConfigs", () => {
-    const configs = configsByPipeline([
-        config({ id: "work-1", definitionId: 1 }),
-        config({ id: "other-1", definitionId: 1 }),
-        config({ id: "other-2", definitionId: 2 }),
-        config({ id: "third-3", definitionId: 3, enabled: false }),
-    ]);
-
-    it("keeps the work item's project, and other projects only for pipelines that built a linked run", () => {
-        const kept = relevantConfigs(configs, "work", new Set(["other-2"]));
-
-        expect(Array.from(kept.keys()).sort()).toEqual(["other-2", "work-1"]);
-    });
-
-    it("keys each linked run's pipeline by the run's own project", () => {
-        const keys = pipelinesOfBuilds([
-            { id: 96121, project: { id: "other" }, definition: { id: 935 } },
-            { id: 100, project: { id: "work" }, definition: { id: 1 } },
-            { id: 101, project: { id: "work" }, definition: { id: 1 } },
-            { id: 102 },
-        ]);
-
-        expect(Array.from(keys).sort()).toEqual(["other-935", "work-1"]);
-    });
-
+describe("configsByPipeline skips settings saved outside a project", () => {
     it("skips configs saved without a project", () => {
         expect(configsByPipeline([config({ id: "unknown-1", definitionId: 1 })]).size).toBe(0);
     });
 });
-
