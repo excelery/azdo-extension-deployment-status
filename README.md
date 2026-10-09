@@ -13,6 +13,8 @@ Runs are found in two ways:
 
 This is needed because Integrated in build links are only added when a run completes.
 
+Azure DevOps does not create Integrated in build links for runs built from a Git tag. Those runs are shown while they are in progress, but not after they complete. To keep a release visible, run it from a branch instead of a tag.
+
 The extension does not write data to work items; it only reads existing links. Uninstalling it will not affect your work items or any existing data.
 
 ![Deployment section on a work item](static/screenshots/work-item.png)
