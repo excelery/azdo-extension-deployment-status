@@ -135,6 +135,10 @@ one on the default branch, so it cannot review the pull request that introduces 
   now, so a link can still differ when another run succeeds first. Only the repository's own project
   is searched, and Azure Repos only. `DeploymentsResult.noRuns` lets the empty state ask for automatic
   linking when neither source found anything.
+- **Runs built from a Git tag never get an Integrated in build link** (verified: run 96294 on
+  `refs/tags/24.0` listed the work item in `builds/{id}/workitems`, but no link was created). They show
+  while in progress and disappear when they complete. Accepted as a limit: finding them means listing
+  and filtering completed runs (`branchName=refs/tags/*` returns nothing), which was ruled out.
 - **A stage waiting for an approval has no deployment record.** The run's timeline shows it: a
   `Checkpoint.Approval` record in progress under the stage. It is placed in the environment where the
   pipeline's most recent record for the same stage name is, across all mapped environments, since a

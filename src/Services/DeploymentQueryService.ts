@@ -44,7 +44,7 @@ class DeploymentQueryService {
 
         const [linkedPipelines, inProgress] = await Promise.all([
             PipelineRunService.pipelinesOfRuns(linkedRunIds),
-            InProgressRunService.runsOf(relations, allConfigs, workItemId),
+            InProgressRunService.runsOf(relations, allConfigs, workItemId, linkedRunIds),
         ]);
 
         const runIds = Array.from(new Set(linkedRunIds.concat(inProgress.runs.map((run) => run.id))));

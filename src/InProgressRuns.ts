@@ -88,6 +88,23 @@ export function includesWorkItem(workItems: { id?: string | number }[] | undefin
 }
 
 /**
+ * Maps the items with at most `limit` calls in flight, keeping their order. Bounds the requests a
+ * busy repository costs at once.
+ */
+export async function mapLimited<T, R>(items: T[], limit: number, map: (item: T) => Promise<R>): Promise<R[]> {
+    const results: R[] = new Array(items.length);
+    let next = 0;
+    const worker = async () => {
+        while (next < items.length) {
+            const index = next++;
+            results[index] = await map(items[index]);
+        }
+    };
+    await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+    return results;
+}
+
+/**
  * The stages of a run waiting for an approval: a stage whose checkpoint holds an approval still in
  * progress. Named by the stage identifier, as deployment records name it.
  */

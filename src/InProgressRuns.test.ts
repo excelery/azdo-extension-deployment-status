@@ -4,6 +4,7 @@ import { PipelineConfig } from "./Contracts";
 import {
     enabledDefinitions,
     includesWorkItem,
+    mapLimited,
     repositoriesFromRelations,
     stagesWaitingForApproval,
     waitingDeployments,
@@ -171,5 +172,26 @@ describe("waitingDeployments", () => {
 
     it("needs the run's project and pipeline", () => {
         expect(waitingStagesOf({ id: 1 }, ["Prod"])).toEqual([]);
+    });
+});
+
+describe("mapLimited", () => {
+    it("keeps the order and never has more than the limit in flight", async () => {
+        let inFlight = 0;
+        let most = 0;
+        const results = await mapLimited([1, 2, 3, 4, 5, 6, 7], 3, async (n) => {
+            inFlight++;
+            most = Math.max(most, inFlight);
+            await new Promise((resolve) => setTimeout(resolve, (8 - n) % 3));
+            inFlight--;
+            return n * 10;
+        });
+
+        expect(results).toEqual([10, 20, 30, 40, 50, 60, 70]);
+        expect(most).toBe(3);
+    });
+
+    it("handles no items", async () => {
+        expect(await mapLimited([], 6, async (n: number) => n)).toEqual([]);
     });
 });
