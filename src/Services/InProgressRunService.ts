@@ -7,6 +7,7 @@ import {
     WaitingStage,
     enabledDefinitions,
     includesWorkItem,
+    mapLimited,
     repositoriesFromRelations,
     stagesWaitingForApproval,
     waitingStagesOf,
@@ -20,6 +21,8 @@ const MAX_RUNS = 100;
  * out of a run that includes many.
  */
 const MAX_WORK_ITEMS = 1000;
+/** Work item and timeline requests in flight at once, so a busy repository cannot flood the API. */
+const CONCURRENT_REQUESTS = 6;
 
 export interface InProgressRuns {
     runs: InProgressBuild[];
@@ -35,17 +38,22 @@ export interface InProgressRuns {
  * load asks again.
  */
 class InProgressRunService {
+    /** `linkedRunIds` are the work item's build links: those runs include it without asking. */
     public async runsOf(
         relations: WorkItemRelation[],
         configs: Map<string, PipelineConfig>,
-        workItemId: number
+        workItemId: number,
+        linkedRunIds: number[]
     ): Promise<InProgressRuns> {
         const perRepository = await Promise.all(
             repositoriesFromRelations(relations).map((repository) => this.runsIn(repository, configs))
         );
         const candidates = perRepository.reduce((all, some) => all.concat(some), [] as InProgressBuild[]);
 
-        const perRun = await Promise.all(candidates.map((run) => this.includedRun(run, workItemId)));
+        const linked = new Set(linkedRunIds);
+        const perRun = await mapLimited(candidates, CONCURRENT_REQUESTS, (run) =>
+            this.includedRun(run, workItemId, linked.has(run.id))
+        );
         const included = perRun.filter((result): result is InProgressRuns => !!result);
 
         return {
@@ -75,27 +83,38 @@ class InProgressRunService {
         }
     }
 
-    /** The run and its stages waiting for an approval, when the run includes the work item. */
-    private async includedRun(run: InProgressBuild, workItemId: number): Promise<InProgressRuns | undefined> {
+    /**
+     * The run and its stages waiting for an approval, when the run includes the work item. A linked run
+     * is in progress again when a stage is rerun; it is known to include the work item.
+     */
+    private async includedRun(
+        run: InProgressBuild,
+        workItemId: number,
+        linked: boolean
+    ): Promise<InProgressRuns | undefined> {
         const projectId = run.project && run.project.id;
         if (!projectId) {
             return undefined;
         }
+        if (!linked && !(await this.includes(run, workItemId, projectId))) {
+            return undefined;
+        }
 
+        return { runs: [run], waiting: waitingStagesOf(run, await this.stagesWaitingForApproval(run, projectId)) };
+    }
+
+    /** Whether the run's work items, as Azure DevOps lists them, include the work item. */
+    private async includes(run: InProgressBuild, workItemId: number, projectId: string): Promise<boolean> {
         try {
             const workItems = await AzdoClient.get<{ value: { id: string }[] }>(
                 `_apis/build/builds/${run.id}/workitems?$top=${MAX_WORK_ITEMS}`,
                 "7.1",
                 projectId
             );
-            if (!includesWorkItem(workItems && workItems.value, workItemId)) {
-                return undefined;
-            }
+            return includesWorkItem(workItems && workItems.value, workItemId);
         } catch {
-            return undefined;
+            return false;
         }
-
-        return { runs: [run], waiting: waitingStagesOf(run, await this.stagesWaitingForApproval(run, projectId)) };
     }
 
     /** An unreadable timeline only hides the waiting stages; the run's deployments still show. */
