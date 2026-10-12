@@ -13,15 +13,7 @@
         "uri": "dist/PipelineSettings/PipelineSettings.html",
         "registeredObjectId": "pipeline-settings-menu-action",
         "order": 35
-      },
-      "constraints": [
-        {
-          "name": "Feature",
-          "properties": {
-            "featureId": "excelery.deployment-status-to-boards.preview"
-          }
-        }
-      ]
+      }
     },
     {
       "id": "pipeline-settings-panel",

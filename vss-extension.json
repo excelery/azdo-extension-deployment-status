@@ -69,24 +69,7 @@
       "addressable": false
     }
   ],
-  "contributions": [
-    {
-      "id": "preview",
-      "type": "ms.vss-web.feature",
-      "targets": [
-        "ms.vss-web.managed-features"
-      ],
-      "properties": {
-        "name": "Deployment Status to Boards for YAML",
-        "userConfigurable": false,
-        "hostConfigurable": true,
-        "hostScopes": [
-          "project"
-        ],
-        "defaultState": false
-      }
-    }
-  ],
+  "contributions": [],
   "galleryFlags": [
     "Preview"
   ],

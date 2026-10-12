@@ -13,7 +13,7 @@ description: Package, publish, install and iterate on this Azure DevOps extensio
 JS from the dev server. Edit a `.tsx` file, reload the page, done.
 
 Manifests are baked into the `.vsix`. Anything in `vss-extension.json` or `src/**/*.manifest.json` —
-scopes, contributions, constraints, menu text, the work item group's `height`, the feature flag —
+scopes, contributions, constraints, menu text, the work item group's `height` —
 requires a repackage, publish and install before it has any effect.
 
 When a change "isn't showing up", check which kind it was before debugging anything else.
@@ -85,9 +85,8 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 The response lists the version, the declared scopes and every registered contribution — which answers
 "did my manifest change actually ship" directly.
 
-**The contributions are gated behind a preview feature flag, off by default.** After installing, switch
-on the extension's feature for the project in **User settings → Preview features** (a project administrator selects the project; it is not a per-user switch). Until then the work item control and the pipeline menu item do not render at all, which looks
-exactly like a broken build.
+**The work item control appears only once it is added to the work item type's layout** (Organization
+settings → Process). Until then it does not render at all, which looks exactly like a broken build.
 
 ## Changing scopes
 
