@@ -55,8 +55,6 @@ This extension requires read-only access to work items and builds. No data leave
 
 ## Support
 
-For common problems, such as a release built from a Git tag not being shown, see [Troubleshooting](https://github.com/excelery/azdo-extension-deployment-status/blob/main/SUPPORT.md#troubleshooting).
-
 Report bugs and request features through [GitHub Issues](https://github.com/excelery/azdo-extension-deployment-status/issues). Please check existing issues before opening a new one.
 
 To report a vulnerability, follow [SECURITY.md](https://github.com/excelery/azdo-extension-deployment-status/blob/main/SECURITY.md).
