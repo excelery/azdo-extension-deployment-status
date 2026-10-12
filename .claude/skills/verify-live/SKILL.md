@@ -54,7 +54,7 @@ account picker it needs a human to sign in once — that cannot be driven headle
 - **Console output from those frames does not reach the parent.** To get values out, either return them
   from `Runtime.evaluate` or stash them on `window` and read them back.
 - **If the frame is not found, check the obvious causes first**: the dev server is not running on
-  port 3000; the preview feature flag is off, so the contribution is not rendered at all; or the page
+  port 3000; the control is not on the work item type's layout; or the page
   has not finished loading. A missing frame is usually configuration, not a bug.
 - **Frames take seconds to appear.** `eval` retries for 20 seconds by default (`--retries`).
 

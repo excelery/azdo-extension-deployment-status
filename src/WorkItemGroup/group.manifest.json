@@ -11,15 +11,7 @@
         "name": "Deployment Status for YAML",
         "uri": "dist/DeploymentsGroup/DeploymentsGroup.html",
         "height": 220
-      },
-      "constraints": [
-        {
-          "name": "Feature",
-          "properties": {
-            "featureId": "excelery.deployment-status-to-boards.preview"
-          }
-        }
-      ]
+      }
     }
   ]
 }

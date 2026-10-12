@@ -21,7 +21,6 @@ For text users see (Marketplace page, manifest, menus, panels, messages):
 - **No marketing voice.** No "Know where…", "Safe to try", "Brings…". Plain, factual, like a Microsoft listing.
 - **Keep internals out.** No "read-only", scopes, stopgap or roadmap reasons in titles or taglines.
 - **Use the real names.** The pipeline menu item is **Boards Integration**; refer to it by that name.
-- **No description on the preview feature flag.**
 - **Start from Microsoft's source.** Read the wording and screenshots in `MicrosoftDocs/azure-devops-docs`
   (`docs/boards/backlogs/add-link.md`, `docs/pipelines/integrations/configure-pipelines-work-tracking.md`)
   before writing, instead of inventing phrasing.
@@ -36,9 +35,8 @@ For text users see (Marketplace page, manifest, menus, panels, messages):
 | `pipeline-settings-menu-action` | `ms.vss-web.action` | `ms.vss-build-web.build-definition-menu` | `src/PipelineSettings/PipelineSettings.tsx` |
 | `pipeline-settings-panel` | `ms.vss-web.external-content` | (opened by the action) | `src/PipelineSettings/PipelineSettingsPanel.tsx` |
 
-Both the work item group and the menu action are constrained on a `ms.vss-web.feature` contribution
-(`preview`), off by default and enabled per project in **Preview features** (`hostConfigurable` with
-`hostScopes: ["project"]`, not `userConfigurable`). With the flag off neither appears.
+There is no preview feature flag: the work item control and the menu action show wherever the extension
+is installed. The extension stays private, shared only with the organizations listed in the pipeline.
 
 The menu item reads **Boards Integration** with `order: 35`. Scopes are `vso.work` and `vso.build`,
 both read-only. `static/logo.png` is the only image asset.
@@ -120,10 +118,9 @@ one on the default branch, so it cannot review the pull request that introduces 
   are server-validated (a custom type fails with *500 Unrecognized Resource link*); `Integrated in
   release environment` is writable but renders as a deleted artifact; an artifact URI may appear only
   once per work item, so one run deploying to two environments collides with itself.
-- **Each published extension ID has its own preview feature** (`excelery.<id>.preview`). Manifests
-  reference only the release feature; `.azure-pipelines/deploy.yml` rewrites constraints to the dev or
-  test install's own feature at publish. Listing several features lets one install's switch show
-  another install's UI.
+- **Dev and test installs in the same organization both show their UI.** There is no feature flag to
+  hide one, so `.azure-pipelines/deploy.yml` adds `(dev)` or `(test)` to the control and menu item
+  names at publish, to tell them apart.
 - **An environment deployment's Changes and Work items tabs stay empty unless the deployment job runs
   `- checkout: self`** (verified). Deployment jobs check out nothing by default. The extension doesn't
   depend on those tabs, but run links open that page, so users notice.
