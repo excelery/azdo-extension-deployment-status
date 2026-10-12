@@ -49,15 +49,13 @@ Add the Deployment Status for YAML custom control to the group.
 
 If not needed for classic release pipelines, Hide the built-in Deployment section.
 
-## Limitations
-
-Azure DevOps does not create Integrated in build links for runs built from a Git tag. Those runs are shown while they are in progress, but not after they complete. To keep a release visible, run it from a branch instead of a tag.
-
 ## Permissions and privacy
 
 This extension requires read-only access to work items and builds. No data leaves your Azure DevOps organization. See [PRIVACY.md](https://github.com/excelery/azdo-extension-deployment-status/blob/main/PRIVACY.md).
 
 ## Support
+
+For common problems, such as a release built from a Git tag not being shown, see [Troubleshooting](https://github.com/excelery/azdo-extension-deployment-status/blob/main/SUPPORT.md#troubleshooting).
 
 Report bugs and request features through [GitHub Issues](https://github.com/excelery/azdo-extension-deployment-status/issues). Please check existing issues before opening a new one.
 
