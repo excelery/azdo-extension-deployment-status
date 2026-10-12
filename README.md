@@ -21,7 +21,7 @@ The extension does not write data to work items; it only reads existing links. U
 
 ## Get started
 
-> Note: During initial testing, the extension is behind a preview feature. Open User settings > Preview features and turn on Deployment Status to Boards for YAML.
+> Note: During initial testing, the extension is behind a preview feature, turned on per project. A project administrator opens User settings > Preview features, selects the project, and turns on Deployment Status to Boards for YAML.
 
 ### 1. Enable automatic work item linking
 

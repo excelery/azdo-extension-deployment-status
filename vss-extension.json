@@ -78,8 +78,11 @@
       ],
       "properties": {
         "name": "Deployment Status to Boards for YAML",
-        "userConfigurable": true,
-        "hostConfigurable": false,
+        "userConfigurable": false,
+        "hostConfigurable": true,
+        "hostScopes": [
+          "project"
+        ],
         "defaultState": false
       }
     }

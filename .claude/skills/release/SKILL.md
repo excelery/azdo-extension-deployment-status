@@ -86,7 +86,7 @@ The response lists the version, the declared scopes and every registered contrib
 "did my manifest change actually ship" directly.
 
 **The contributions are gated behind a preview feature flag, off by default.** After installing, switch
-on the extension's feature in **User settings → Preview features**. Until then the work item control and the pipeline menu item do not render at all, which looks
+on the extension's feature for the project in **User settings → Preview features** (a project administrator selects the project; it is not a per-user switch). Until then the work item control and the pipeline menu item do not render at all, which looks
 exactly like a broken build.
 
 ## Changing scopes
