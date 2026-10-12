@@ -37,7 +37,8 @@ For text users see (Marketplace page, manifest, menus, panels, messages):
 | `pipeline-settings-panel` | `ms.vss-web.external-content` | (opened by the action) | `src/PipelineSettings/PipelineSettingsPanel.tsx` |
 
 Both the work item group and the menu action are constrained on a `ms.vss-web.feature` contribution
-(`preview`), off by default and enabled per user in **Preview features**. With the flag off neither appears.
+(`preview`), off by default and enabled per project in **Preview features** (`hostConfigurable` with
+`hostScopes: ["project"]`, not `userConfigurable`). With the flag off neither appears.
 
 The menu item reads **Boards Integration** with `order: 35`. Scopes are `vso.work` and `vso.build`,
 both read-only. `static/logo.png` is the only image asset.
