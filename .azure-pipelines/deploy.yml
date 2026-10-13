@@ -27,29 +27,36 @@ jobs:
             displayName: Tag names with the environment
             inputs:
               targetType: inline
+              # PowerShell opens the package; Node edits the manifest, as JSON.parse keeps it unchanged
+              # apart from the names (Windows PowerShell's JSON round trip can rewrite values).
               script: |
                 $ErrorActionPreference = 'Stop'
                 Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
-                $suffix = " (${{ parameters.environment }})"
+                $manifest = Join-Path $env:AGENT_TEMPDIRECTORY 'extension.vsomanifest'
+                $tagger = Join-Path $env:AGENT_TEMPDIRECTORY 'tag-environment.js'
+                Set-Content -Path $tagger -Encoding ascii -Value @'
+                const fs = require("fs");
+                const [file, env] = process.argv.slice(2);
+                const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
+                for (const c of manifest.contributions || []) {
+                  if (c.properties && c.properties.name && c.type === "ms.vss-work-web.work-item-form-control") {
+                    c.properties.name += ` (${env})`;
+                  }
+                  if (c.properties && c.properties.text && c.type === "ms.vss-web.action") {
+                    c.properties.text += ` (${env})`;
+                  }
+                }
+                fs.writeFileSync(file, JSON.stringify(manifest));
+                '@
+
                 $zip = [System.IO.Compression.ZipFile]::Open($env:VSIX, 'Update')
                 try {
                   $entry = $zip.GetEntry('extension.vsomanifest')
-                  $reader = New-Object System.IO.StreamReader($entry.Open())
-                  $manifest = $reader.ReadToEnd() | ConvertFrom-Json
-                  $reader.Close()
-                  foreach ($c in $manifest.contributions) {
-                    if ($c.type -eq 'ms.vss-work-web.work-item-form-control' -and $c.properties.name) {
-                      $c.properties.name += $suffix
-                    }
-                    if ($c.type -eq 'ms.vss-web.action' -and $c.properties.text) {
-                      $c.properties.text += $suffix
-                    }
-                  }
-                  $json = ConvertTo-Json -InputObject $manifest -Depth 100 -Compress
+                  [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $manifest, $true)
+                  node $tagger $manifest '${{ parameters.environment }}'
+                  if ($LASTEXITCODE -ne 0) { throw "Tagging the manifest failed" }
                   $entry.Delete()
-                  $writer = New-Object System.IO.StreamWriter($zip.CreateEntry('extension.vsomanifest').Open())
-                  $writer.Write($json)
-                  $writer.Close()
+                  [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $manifest, 'extension.vsomanifest') | Out-Null
                 } finally {
                   $zip.Dispose()
                 }
