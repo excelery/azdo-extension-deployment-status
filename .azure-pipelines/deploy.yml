@@ -5,14 +5,19 @@ parameters:
 jobs:
 - deployment: Publish
   environment: deployment-status-${{ parameters.environment }}
-  pool:
-    vmImage: ubuntu-latest
+  # The self-hosted agent: the Microsoft-hosted free tier ran out of minutes.
+  pool: Default
   strategy:
     runOnce:
       deploy:
         steps:
         - download: current
           artifact: drop
+
+        # The self-hosted agent brings no Node of its own; the steps below run node and tfx.
+        - task: UseNode@1
+          inputs:
+            version: '22.x'
 
         # Dev and test are installed side by side. Add the environment to the names
         # users choose from (custom control, menu item), so the installs can be told apart.

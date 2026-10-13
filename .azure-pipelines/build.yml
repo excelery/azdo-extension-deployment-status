@@ -1,7 +1,7 @@
 jobs:
 - job: Build
-  pool:
-    vmImage: ubuntu-latest
+  # The self-hosted agent: the Microsoft-hosted free tier ran out of minutes.
+  pool: Default
   steps:
   - task: UseNode@1
     inputs:
