@@ -20,11 +20,12 @@ class DeploymentQueryService {
     public async getDeployments(): Promise<DeploymentsResult> {
         const workItem = await this.openWorkItem();
 
-        const [completed, running] = await Promise.all([
+        const [completed, running, failed] = await Promise.all([
             RunService.completedRuns(workItem),
             RunService.runningRuns(workItem),
+            RunService.failedRuns(workItem),
         ]);
-        const runs = mergeRuns(completed, running);
+        const runs = mergeRuns(completed, failed.concat(running));
         if (!runs.length) {
             return { groups: [], noRuns: true };
         }

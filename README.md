@@ -9,7 +9,7 @@ The extension adds a custom control to Azure Boards work item forms that display
 Runs are found in two ways:
 
 - Completed runs: the associated build is identified using the work item's Integrated in build links.
-- Runs in progress, for example waiting for an approval, which is common for multi-stage pipelines: the extension identifies the associated builds using the commits or pull requests linked to the work item.
+- Runs in progress, for example waiting for an approval, which is common for multi-stage pipelines, and failed or canceled runs, which never get an Integrated in build link: the extension identifies the associated builds using the commits or pull requests linked to the work item.
 
 This is needed because Integrated in build links are only added when a run completes.
 

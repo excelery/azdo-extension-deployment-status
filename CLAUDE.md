@@ -134,6 +134,10 @@ one on the default branch, so it cannot review the pull request that introduces 
   now, so a link can still differ when another run succeeds first. Only the repository's own project
   is searched, and Azure Repos only. `DeploymentsResult.noRuns` lets the empty state ask for automatic
   linking when neither source found anything.
+- **Failed and canceled runs never get an Integrated in build link** (confirmed). `RunService.failedRuns`
+  finds them like runs in progress: `statusFilter=completed&resultFilter=failed,canceled`, limited to
+  runs since the work item was first linked to the repository (the earliest `authorizedDate` of its
+  commit and pull request links), then the same `builds/{id}/workitems` check.
 - **Runs built from a Git tag never get an Integrated in build link** (verified: run 96294 on
   `refs/tags/24.0` listed the work item in `builds/{id}/workitems`, but no link was created). They show
   while in progress and disappear when they complete. Accepted as a limit: finding them means listing

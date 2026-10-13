@@ -5,9 +5,9 @@ import { WorkItemRelation, pipelineKey, projectIdOf } from "./Deployments";
  * A work item's runs: the pipeline runs that include it.
  *
  * Completed runs are its Integrated in build links. Azure DevOps adds a link only when a run
- * completes, so runs in progress are found through the repositories of the work item's commit and
- * pull request links, and kept when Azure DevOps lists the work item on the run (the list the link is
- * made from).
+ * succeeds, so runs in progress, and failed or canceled runs, are found through the repositories of
+ * the work item's commit and pull request links, and kept when Azure DevOps lists the work item on
+ * the run (the list the link is made from).
  *
  * Pure functions here; requests in RunService.
  */
@@ -48,6 +48,8 @@ export interface Build {
 export interface Repository {
     projectId: string;
     repositoryId: string;
+    /** When the work item was first linked to a commit or pull request in it, when known. */
+    linkedSince?: string;
 }
 
 export interface TimelineRecord {
@@ -88,11 +90,24 @@ export function repositoriesFromRelations(relations: WorkItemRelation[]): Reposi
             continue;
         }
         const [projectId, repositoryId] = decodeURIComponent(match[1]).split("/");
-        if (projectId && repositoryId) {
-            repositories.set(repositoryId.toLowerCase(), { projectId, repositoryId });
+        if (!projectId || !repositoryId) {
+            continue;
         }
+        const key = repositoryId.toLowerCase();
+        const linkedSince = earliest(
+            repositories.has(key) ? repositories.get(key)!.linkedSince : undefined,
+            relation.attributes && relation.attributes.authorizedDate
+        );
+        repositories.set(key, { projectId, repositoryId, linkedSince });
     }
     return Array.from(repositories.values());
+}
+
+function earliest(a: string | undefined, b: string | undefined): string | undefined {
+    if (!a || !b) {
+        return a || b;
+    }
+    return Date.parse(a) <= Date.parse(b) ? a : b;
 }
 
 /** The definition ids of a project's pipelines with Boards Integration enabled. */

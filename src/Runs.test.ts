@@ -57,6 +57,20 @@ describe("repositoriesFromRelations", () => {
     it("handles no relations", () => {
         expect(repositoriesFromRelations(undefined as any)).toEqual([]);
     });
+
+    it("keeps the date the work item was first linked to each repository", () => {
+        const dated = (kind: string, id: string, authorizedDate: string) => ({
+            ...link(kind, id),
+            attributes: { name: "Fixed in Commit", authorizedDate },
+        });
+        const [repository] = repositoriesFromRelations([
+            dated("Commit", "73fb080120814ecdeabca1fc767a97fda12127a9", "2026-10-02T13:13:13Z"),
+            dated("PullRequestId", "42", "2026-09-22T12:58:11Z"),
+            link("Commit", "e303e47498bfbc5fe831465e7c2555b1b45869f0"),
+        ]);
+
+        expect(repository.linkedSince).toBe("2026-09-22T12:58:11Z");
+    });
 });
 
 describe("enabledDefinitions", () => {

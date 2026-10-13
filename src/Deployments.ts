@@ -23,7 +23,7 @@ export interface GroupedDeployments {
 export interface WorkItemRelation {
     rel: string;
     url: string;
-    attributes?: { name?: string };
+    attributes?: { name?: string; authorizedDate?: string };
 }
 
 export interface RawDeploymentRecord {

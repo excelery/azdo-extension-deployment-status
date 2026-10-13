@@ -61,9 +61,38 @@ class RunService {
      * The runs in progress that include the work item: the runs an Integrated in build link will name
      * when they complete, with their stages waiting for an approval.
      */
-    public async runningRuns(workItem: WorkItem): Promise<Run[]> {
+    public runningRuns(workItem: WorkItem): Promise<Run[]> {
+        return this.unlinkedRuns(workItem, () => "statusFilter=inProgress", true);
+    }
+
+    /**
+     * The failed or canceled runs that include the work item. Azure DevOps links only runs that
+     * succeed. Only runs finished since the work item was first linked to the repository can include it.
+     */
+    public failedRuns(workItem: WorkItem): Promise<Run[]> {
+        return this.unlinkedRuns(
+            workItem,
+            (repository) =>
+                repository.linkedSince &&
+                `statusFilter=completed&resultFilter=failed,canceled&minTime=${encodeURIComponent(repository.linkedSince)}`,
+            false
+        );
+    }
+
+    /**
+     * The runs of the linked repositories that `filter` lists and that include the work item.
+     * `filter` returns no filter for a repository it cannot narrow, which then is not queried.
+     */
+    private async unlinkedRuns(
+        workItem: WorkItem,
+        filter: (repository: Repository) => string | undefined,
+        readWaitingStages: boolean
+    ): Promise<Run[]> {
         const perRepository = await Promise.all(
-            repositoriesFromRelations(workItem.relations).map((repository) => this.runsInProgress(repository, workItem))
+            repositoriesFromRelations(workItem.relations).map((repository) => {
+                const runFilter = filter(repository);
+                return runFilter ? this.runsIn(repository, workItem, runFilter) : Promise.resolve([] as Build[]);
+            })
         );
         const candidates = perRepository.reduce((all, some) => all.concat(some), [] as Build[]);
 
@@ -71,13 +100,16 @@ class RunService {
         const runs = await mapLimited(candidates, CONCURRENT_REQUESTS, async (build) => {
             // A linked run is in progress again when a stage is rerun; it is known to include the work item.
             const included = linked.has(build.id) || (await this.includes(build, workItem.id));
-            return included ? runOf(build, await this.stagesWaitingForApproval(build)) : undefined;
+            if (!included) {
+                return undefined;
+            }
+            return runOf(build, readWaitingStages ? await this.stagesWaitingForApproval(build) : []);
         });
         return runs.filter((run): run is Run => !!run);
     }
 
-    /** The repository's runs in progress, of the pipelines in its project with Boards Integration enabled. */
-    private async runsInProgress(repository: Repository, workItem: WorkItem): Promise<Build[]> {
+    /** The repository's runs matching `runFilter`, of the pipelines in its project with Boards Integration enabled. */
+    private async runsIn(repository: Repository, workItem: WorkItem, runFilter: string): Promise<Build[]> {
         const definitionIds = enabledDefinitions(workItem.configs, repository.projectId);
         const builds: Build[] = [];
         let continuationToken: string | undefined;
@@ -90,7 +122,7 @@ class RunService {
                 const token = continuationToken ? `&continuationToken=${encodeURIComponent(continuationToken)}` : "";
                 const response = await AzdoClient.getPage<{ value: Build[] }>(
                     `_apis/build/builds?repositoryId=${repository.repositoryId}&repositoryType=TfsGit` +
-                        `&definitions=${definitionIds.join(",")}&statusFilter=inProgress` +
+                        `&definitions=${definitionIds.join(",")}&${runFilter}` +
                         `&queryOrder=queueTimeDescending&$top=${RUNS_PER_PAGE}${token}`,
                     "7.1",
                     repository.projectId
