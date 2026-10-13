@@ -14,35 +14,45 @@ jobs:
         - download: current
           artifact: drop
 
-        # The self-hosted agent brings no Node of its own; the steps below run node and tfx.
+        # tfx needs Node, which a self-hosted agent may not have.
         - task: UseNode@1
           inputs:
             version: '22.x'
 
         # Dev and test are installed side by side. Add the environment to the names
         # users choose from (custom control, menu item), so the installs can be told apart.
+        # PowerShell, so it runs on Windows and Linux agents alike.
         - ${{ if ne(parameters.environment, 'prod') }}:
-          - bash: |
-              set -euo pipefail
-              work=$(mktemp -d)
-              cd "$work"
-              unzip -q "$VSIX" extension.vsomanifest
-              node -e '
-                const fs = require("fs");
-                const manifest = JSON.parse(fs.readFileSync("extension.vsomanifest", "utf8"));
-                const env = process.argv[1];
-                for (const c of manifest.contributions || []) {
-                  if (c.properties && c.properties.name && c.type === "ms.vss-work-web.work-item-form-control") {
-                    c.properties.name += ` (${env})`;
-                  }
-                  if (c.properties && c.properties.text && c.type === "ms.vss-web.action") {
-                    c.properties.text += ` (${env})`;
-                  }
-                }
-                fs.writeFileSync("extension.vsomanifest", JSON.stringify(manifest));
-              ' "${{ parameters.environment }}"
-              zip -q "$VSIX" extension.vsomanifest
+          - task: PowerShell@2
             displayName: Tag names with the environment
+            inputs:
+              targetType: inline
+              script: |
+                $ErrorActionPreference = 'Stop'
+                Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+                $suffix = " (${{ parameters.environment }})"
+                $zip = [System.IO.Compression.ZipFile]::Open($env:VSIX, 'Update')
+                try {
+                  $entry = $zip.GetEntry('extension.vsomanifest')
+                  $reader = New-Object System.IO.StreamReader($entry.Open())
+                  $manifest = $reader.ReadToEnd() | ConvertFrom-Json
+                  $reader.Close()
+                  foreach ($c in $manifest.contributions) {
+                    if ($c.type -eq 'ms.vss-work-web.work-item-form-control' -and $c.properties.name) {
+                      $c.properties.name += $suffix
+                    }
+                    if ($c.type -eq 'ms.vss-web.action' -and $c.properties.text) {
+                      $c.properties.text += $suffix
+                    }
+                  }
+                  $json = ConvertTo-Json -InputObject $manifest -Depth 100 -Compress
+                  $entry.Delete()
+                  $writer = New-Object System.IO.StreamWriter($zip.CreateEntry('extension.vsomanifest').Open())
+                  $writer.Write($json)
+                  $writer.Close()
+                } finally {
+                  $zip.Dispose()
+                }
             env:
               ${{ if eq(parameters.environment, 'dev') }}:
                 VSIX: $(Pipeline.Workspace)/drop/$(extensionId)-dev-$(Build.BuildNumber).vsix

@@ -54,8 +54,8 @@ the `verify-live` skill rather than at install time.
 
 CI does this: `.azure-pipelines/build.yml` runs tests, builds and packages both variants;
 `deploy.yml` publishes to Azure DevOps environments `deployment-status-<env>`. Both run on the self-hosted `Default` agent pool,
-since the Microsoft-hosted free tier ran out of minutes. The agent needs `bash`, `zip` and `unzip`;
-Node comes from `UseNode@1`.
+since the Microsoft-hosted free tier ran out of minutes. The agent runs Windows, so steps stay
+cross-platform: PowerShell (`PowerShell@2`), not bash; Node comes from `UseNode@1`.
 
 Environments:
 
