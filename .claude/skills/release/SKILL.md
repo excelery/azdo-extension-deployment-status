@@ -53,7 +53,11 @@ the `verify-live` skill rather than at install time.
 ## Publishing
 
 CI does this: `.azure-pipelines/build.yml` runs tests, builds and packages both variants;
-`deploy.yml` publishes to Azure DevOps environments `deployment-status-<env>`:
+`deploy.yml` publishes to Azure DevOps environments `deployment-status-<env>`. Both run on the self-hosted `Default` agent pool,
+since the Microsoft-hosted free tier ran out of minutes. The agent runs Windows, so steps stay
+cross-platform: PowerShell (`PowerShell@2`), not bash; Node comes from `UseNode@1`.
+
+Environments:
 
 - **dev** (`<id>-dev`): every branch, private to the `excelery` org. Loads code from `localhost:3000`.
 - **test** (`<id>-test`): every branch, private, after approval on the test environment, shared with `testShareWithOrgs`. The real build.
