@@ -39,7 +39,7 @@ Choose which deployments to show:
 
 - All deployments (default): includes deployments in progress and waiting for approval.
 - Completed deployments: includes completed deployments from runs still in progress.
-- Completed runs only: includes only deployments from completed runs. Fastest.
+- Completed runs only: includes only deployments from completed runs. Fastest load time.
 
 ![Boards Integration panel](static/screenshots/boards-integration.png)
 
