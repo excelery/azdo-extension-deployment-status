@@ -5,8 +5,8 @@ parameters:
 jobs:
 - deployment: Publish
   environment: deployment-status-${{ parameters.environment }}
-  pool:
-    vmImage: ubuntu-latest
+  # The self-hosted agent: the Microsoft-hosted free tier ran out of minutes.
+  pool: Default
   strategy:
     runOnce:
       deploy:
@@ -14,18 +14,30 @@ jobs:
         - download: current
           artifact: drop
 
+        # tfx needs Node, which a self-hosted agent may not have.
+        - task: UseNode@1
+          inputs:
+            version: '22.x'
+
         # Dev and test are installed side by side. Add the environment to the names
         # users choose from (custom control, menu item), so the installs can be told apart.
+        # PowerShell, so it runs on Windows and Linux agents alike.
         - ${{ if ne(parameters.environment, 'prod') }}:
-          - bash: |
-              set -euo pipefail
-              work=$(mktemp -d)
-              cd "$work"
-              unzip -q "$VSIX" extension.vsomanifest
-              node -e '
+          - task: PowerShell@2
+            displayName: Tag names with the environment
+            inputs:
+              targetType: inline
+              # PowerShell opens the package; Node edits the manifest, as JSON.parse keeps it unchanged
+              # apart from the names (Windows PowerShell's JSON round trip can rewrite values).
+              script: |
+                $ErrorActionPreference = 'Stop'
+                Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+                $manifest = Join-Path $env:AGENT_TEMPDIRECTORY 'extension.vsomanifest'
+                $tagger = Join-Path $env:AGENT_TEMPDIRECTORY 'tag-environment.js'
+                Set-Content -Path $tagger -Encoding ascii -Value @'
                 const fs = require("fs");
-                const manifest = JSON.parse(fs.readFileSync("extension.vsomanifest", "utf8"));
-                const env = process.argv[1];
+                const [file, env] = process.argv.slice(2);
+                const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
                 for (const c of manifest.contributions || []) {
                   if (c.properties && c.properties.name && c.type === "ms.vss-work-web.work-item-form-control") {
                     c.properties.name += ` (${env})`;
@@ -34,10 +46,20 @@ jobs:
                     c.properties.text += ` (${env})`;
                   }
                 }
-                fs.writeFileSync("extension.vsomanifest", JSON.stringify(manifest));
-              ' "${{ parameters.environment }}"
-              zip -q "$VSIX" extension.vsomanifest
-            displayName: Tag names with the environment
+                fs.writeFileSync(file, JSON.stringify(manifest));
+                '@
+
+                $zip = [System.IO.Compression.ZipFile]::Open($env:VSIX, 'Update')
+                try {
+                  $entry = $zip.GetEntry('extension.vsomanifest')
+                  [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $manifest, $true)
+                  node $tagger $manifest '${{ parameters.environment }}'
+                  if ($LASTEXITCODE -ne 0) { throw "Tagging the manifest failed" }
+                  $entry.Delete()
+                  [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $manifest, 'extension.vsomanifest') | Out-Null
+                } finally {
+                  $zip.Dispose()
+                }
             env:
               ${{ if eq(parameters.environment, 'dev') }}:
                 VSIX: $(Pipeline.Workspace)/drop/$(extensionId)-dev-$(Build.BuildNumber).vsix
