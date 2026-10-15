@@ -95,11 +95,19 @@ export function repositoriesFromRelations(relations: WorkItemRelation[]): Reposi
     return Array.from(repositories.values());
 }
 
-/** The definition ids of a project's pipelines with Boards Integration enabled. */
-export function enabledDefinitions(configs: Map<string, PipelineConfig>, projectId: string): number[] {
+/** Whether a pipeline's settings show its runs in progress. On unless turned off. */
+export function showsRunsInProgress(config: PipelineConfig): boolean {
+    return config.showRunsInProgress !== false;
+}
+
+/**
+ * The definition ids of a project's pipelines whose runs in progress are shown: Boards Integration
+ * enabled, and Show runs in progress not turned off.
+ */
+export function inProgressDefinitions(configs: Map<string, PipelineConfig>, projectId: string): number[] {
     const definitionIds: number[] = [];
     configs.forEach((config) => {
-        if (config && config.enabled && projectIdOf(config) === projectId) {
+        if (config && config.enabled && showsRunsInProgress(config) && projectIdOf(config) === projectId) {
             definitionIds.push(config.definitionId);
         }
     });

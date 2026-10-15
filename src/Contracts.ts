@@ -22,6 +22,11 @@ export interface PipelineConfig {
     id: string;
     definitionId: number;
     enabled: boolean;
+    /**
+     * Whether runs still running or waiting for an approval are shown too. Off shows only the
+     * completed runs of the work item's Integrated in build links. Unset means on.
+     */
+    showRunsInProgress?: boolean;
     /** Keyed by environment id. */
     environments: Record<string, EnvironmentMapping>;
     __etag?: number;

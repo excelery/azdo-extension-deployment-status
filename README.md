@@ -35,6 +35,8 @@ In pipeline menu, open ⋯ > Boards Integration.
 
 Choose a deployment type for each environment.
 
+Show runs in progress is on by default. Turn it off to show only completed runs, found through Integrated in build links.
+
 ![Boards Integration panel](static/screenshots/boards-integration.png)
 
 ### 3. Add the new control to your work item forms

@@ -7,7 +7,7 @@ import {
     WorkItem,
     buildLinkIds,
     configsOf,
-    enabledDefinitions,
+    inProgressDefinitions,
     includesWorkItem,
     mapLimited,
     mergeRuns,
@@ -59,14 +59,18 @@ describe("repositoriesFromRelations", () => {
     });
 });
 
-describe("enabledDefinitions", () => {
-    it("keeps the enabled pipelines of the project", () => {
+describe("inProgressDefinitions", () => {
+    it("keeps the enabled pipelines of the project that show runs in progress", () => {
         const configs = new Map(
-            [config(PROJECT, 27), config(PROJECT, 28, false), config(OTHER_PROJECT, 29)].map(
-                (c) => [c.id, c] as [string, PipelineConfig]
-            )
+            [
+                config(PROJECT, 27),
+                config(PROJECT, 28, false),
+                config(OTHER_PROJECT, 29),
+                { ...config(PROJECT, 30), showRunsInProgress: false },
+                { ...config(PROJECT, 31), showRunsInProgress: true },
+            ].map((c) => [c.id, c] as [string, PipelineConfig])
         );
-        expect(enabledDefinitions(configs, PROJECT)).toEqual([27]);
+        expect(inProgressDefinitions(configs, PROJECT)).toEqual([27, 31]);
     });
 });
 

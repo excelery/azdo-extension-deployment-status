@@ -5,7 +5,7 @@ import {
     TimelineRecord,
     WorkItem,
     buildLinkIds,
-    enabledDefinitions,
+    inProgressDefinitions,
     includesWorkItem,
     mapLimited,
     repositoriesFromRelations,
@@ -76,9 +76,9 @@ class RunService {
         return runs.filter((run): run is Run => !!run);
     }
 
-    /** The repository's runs in progress, of the pipelines in its project with Boards Integration enabled. */
+    /** The repository's runs in progress, of the pipelines in its project that show them (see `inProgressDefinitions`). */
     private async runsInProgress(repository: Repository, workItem: WorkItem): Promise<Build[]> {
-        const definitionIds = enabledDefinitions(workItem.configs, repository.projectId);
+        const definitionIds = inProgressDefinitions(workItem.configs, repository.projectId);
         const builds: Build[] = [];
         let continuationToken: string | undefined;
 

@@ -17,6 +17,7 @@ import {
 } from "../Contracts";
 import PipelineRunService, { EnvironmentSummary } from "../Services/PipelineRunService";
 import PipelineConfigService from "../Services/PipelineConfigService";
+import { showsRunsInProgress } from "../Runs";
 
 import "azure-devops-ui/Core/override.css";
 import "./PipelineSettingsPanel.scss";
@@ -202,6 +203,20 @@ function PipelineSettingsPanel(): JSX.Element {
                                             </div>
                                         );
                                     })}
+                                </div>
+
+                                <div className="dsb-option">
+                                    <Checkbox
+                                        checked={showsRunsInProgress(config)}
+                                        onChange={(_event, checked) =>
+                                            setConfig({ ...config, showRunsInProgress: checked })
+                                        }
+                                        label="Show runs in progress"
+                                    />
+                                    <div className="dsb-note dsb-option-note">
+                                        Also show runs that are running or waiting for an approval. When off,
+                                        only completed runs to the environment are shown.
+                                    </div>
                                 </div>
 
                                 {environments && environments.length > 0 && (
