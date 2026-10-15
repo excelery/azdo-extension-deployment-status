@@ -9,15 +9,19 @@ import { IListBoxItem } from "azure-devops-ui/ListBox";
 import { DropdownSelection } from "azure-devops-ui/Utilities/DropdownSelection";
 
 import {
+    DEPLOYMENTS_SHOWN,
+    DEPLOYMENTS_SHOWN_DESCRIPTIONS,
+    DEPLOYMENTS_SHOWN_LABELS,
     DEPLOYMENT_TYPES,
     DEPLOYMENT_TYPE_LABELS,
     DeploymentType,
+    DeploymentsShown,
     EnvironmentMapping,
     PipelineConfig,
+    deploymentsShown,
 } from "../Contracts";
 import PipelineRunService, { EnvironmentSummary } from "../Services/PipelineRunService";
 import PipelineConfigService from "../Services/PipelineConfigService";
-import { showsRunsInProgress } from "../Runs";
 
 import "azure-devops-ui/Core/override.css";
 import "./PipelineSettingsPanel.scss";
@@ -29,6 +33,11 @@ const TYPE_ITEMS: IListBoxItem<DeploymentType>[] = DEPLOYMENT_TYPES.map((type) =
     text: DEPLOYMENT_TYPE_LABELS[type],
 }));
 
+const SHOWN_ITEMS: IListBoxItem<DeploymentsShown>[] = DEPLOYMENTS_SHOWN.map((shown) => ({
+    id: shown,
+    text: DEPLOYMENTS_SHOWN_LABELS[shown],
+}));
+
 function PipelineSettingsPanel(): JSX.Element {
     const [definitionId, setDefinitionId] = React.useState(0);
     const [config, setConfig] = React.useState<PipelineConfig | undefined>(undefined);
@@ -37,6 +46,7 @@ function PipelineSettingsPanel(): JSX.Element {
     const [error, setError] = React.useState<string | undefined>(undefined);
     const panelRef = React.useRef<{ close?: (result?: unknown) => void } | undefined>(undefined);
     const selections = React.useRef(new Map<string, DropdownSelection>());
+    const shownSelection = React.useRef(new DropdownSelection());
 
     React.useEffect(() => {
         (async () => {
@@ -59,7 +69,9 @@ function PipelineSettingsPanel(): JSX.Element {
 
             const environmentsLoad = PipelineRunService.environmentsForPipeline(id);
 
-            setConfig(await PipelineConfigService.get(id));
+            const loaded = await PipelineConfigService.get(id);
+            shownSelection.current.select(DEPLOYMENTS_SHOWN.indexOf(deploymentsShown(loaded)));
+            setConfig(loaded);
             setStatus("ready");
 
             setEnvironments(await environmentsLoad);
@@ -206,17 +218,18 @@ function PipelineSettingsPanel(): JSX.Element {
                                 </div>
 
                                 <div className="dsb-option">
-                                    <Checkbox
-                                        checked={showsRunsInProgress(config)}
-                                        onChange={(_event, checked) =>
-                                            setConfig({ ...config, showRunsInProgress: checked })
+                                    <span>Show</span>
+                                    <Dropdown<DeploymentsShown>
+                                        className="dsb-option-dropdown"
+                                        items={SHOWN_ITEMS}
+                                        selection={shownSelection.current}
+                                        onSelect={(_event, item) =>
+                                            setConfig({ ...config, deploymentsShown: item.id as DeploymentsShown })
                                         }
-                                        label="Show runs in progress"
                                     />
-                                    <div className="dsb-note dsb-option-note">
-                                        Also show runs that are running or waiting for an approval. When off,
-                                        only completed runs to the environment are shown.
-                                    </div>
+                                </div>
+                                <div className="dsb-note">
+                                    {DEPLOYMENTS_SHOWN_DESCRIPTIONS[deploymentsShown(config)]}
                                 </div>
 
                                 {environments && environments.length > 0 && (

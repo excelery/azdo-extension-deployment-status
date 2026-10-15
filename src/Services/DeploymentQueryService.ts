@@ -1,7 +1,7 @@
 import * as SDK from "azure-devops-extension-sdk";
 import { IWorkItemFormService, WorkItemTrackingServiceIds } from "azure-devops-extension-api/WorkItemTracking";
 
-import { GroupedDeployments, WorkItemRelation, groupDeployments } from "../Deployments";
+import { GroupedDeployments, WorkItemRelation, groupDeployments, shownDeployments } from "../Deployments";
 import { WorkItem, configsOf, mergeRuns } from "../Runs";
 import AzdoClient from "./AzdoClient";
 import PipelineConfigService from "./PipelineConfigService";
@@ -30,7 +30,7 @@ class DeploymentQueryService {
         }
 
         const configs = configsOf(runs, workItem);
-        const deployments = await PipelineRunService.deploymentsOf(runs, configs);
+        const deployments = shownDeployments(await PipelineRunService.deploymentsOf(runs, configs), configs);
 
         return { groups: groupDeployments(deployments, configs), noRuns: false };
     }

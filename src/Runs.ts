@@ -1,4 +1,4 @@
-import { PipelineConfig } from "./Contracts";
+import { PipelineConfig, deploymentsShown } from "./Contracts";
 import { WorkItemRelation, pipelineKey, projectIdOf } from "./Deployments";
 
 /**
@@ -95,23 +95,30 @@ export function repositoriesFromRelations(relations: WorkItemRelation[]): Reposi
     return Array.from(repositories.values());
 }
 
-/** Whether a pipeline's settings show its runs in progress. On unless turned off. */
-export function showsRunsInProgress(config: PipelineConfig): boolean {
-    return config.showRunsInProgress !== false;
-}
-
 /**
  * The definition ids of a project's pipelines whose runs in progress are shown: Boards Integration
- * enabled, and Show runs in progress not turned off.
+ * enabled, and not set to show completed runs only.
  */
 export function inProgressDefinitions(configs: Map<string, PipelineConfig>, projectId: string): number[] {
     const definitionIds: number[] = [];
     configs.forEach((config) => {
-        if (config && config.enabled && showsRunsInProgress(config) && projectIdOf(config) === projectId) {
+        if (
+            config &&
+            config.enabled &&
+            deploymentsShown(config) !== "completedRuns" &&
+            projectIdOf(config) === projectId
+        ) {
             definitionIds.push(config.definitionId);
         }
     });
     return definitionIds;
+}
+
+/** Whether the run's pipeline shows all deployments, so its stages waiting for an approval are read. */
+export function showsAllDeployments(build: Build, configs: Map<string, PipelineConfig>): boolean {
+    const { project, definition } = build;
+    const config = project && definition ? configs.get(pipelineKey(project.id, definition.id)) : undefined;
+    return !!config && deploymentsShown(config) === "all";
 }
 
 /** Whether a run's work items, as `builds/{id}/workitems` lists them, include the work item. */

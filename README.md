@@ -35,7 +35,11 @@ In pipeline menu, open ⋯ > Boards Integration.
 
 Choose a deployment type for each environment.
 
-Show runs in progress is on by default. Turn it off to show only completed runs, found through Integrated in build links.
+Choose which deployments to show:
+
+- All deployments (default): includes deployments in progress and waiting for approval.
+- Completed deployments: includes completed deployments from runs still in progress.
+- Completed runs only: includes only deployments from completed runs. Fastest.
 
 ![Boards Integration panel](static/screenshots/boards-integration.png)
 
