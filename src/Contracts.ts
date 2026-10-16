@@ -28,9 +28,9 @@ export const DEPLOYMENTS_SHOWN_LABELS: Record<DeploymentsShown, string> = {
 };
 
 export const DEPLOYMENTS_SHOWN_DESCRIPTIONS: Record<DeploymentsShown, string> = {
-    all: "Includes deployments in progress and waiting for approval.",
+    all: "Includes deployments in progress or waiting for approvals and checks.",
     completedDeployments: "Includes completed deployments from runs still in progress.",
-    completedRuns: "Includes only deployments from completed runs. Fastest load time.",
+    completedRuns: "Includes only deployments from completed runs.",
 };
 
 export const DEPLOYMENTS_SHOWN: DeploymentsShown[] = ["all", "completedDeployments", "completedRuns"];

@@ -166,6 +166,12 @@ function PipelineSettingsPanel(): JSX.Element {
 
                         {config.enabled && (
                             <>
+                                <div className="dsb-note">
+                                    Work items need to be linked to a run. Turn on{" "}
+                                    <strong>Automatically link work items included in this run</strong> in the
+                                    pipeline's <strong>Settings</strong>.
+                                </div>
+
                                 <div className="dsb-table">
                                     <div className="dsb-table-head">
                                         <span className="dsb-col-environment">Environment</span>
@@ -231,14 +237,6 @@ function PipelineSettingsPanel(): JSX.Element {
                                 <div className="dsb-note">
                                     {DEPLOYMENTS_SHOWN_DESCRIPTIONS[deploymentsShown(config)]}
                                 </div>
-
-                                {environments && environments.length > 0 && (
-                                    <div className="dsb-note">
-                                        Work items need to be linked to a run. Turn on{" "}
-                                        <strong>Automatically link work items included in this run</strong> in
-                                        the pipeline's <strong>Settings</strong>.
-                                    </div>
-                                )}
                             </>
                         )}
                     </>
