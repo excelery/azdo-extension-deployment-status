@@ -10,6 +10,7 @@ import {
     olderThanRuns,
     orderGroups,
     relativeTime,
+    shownDeployments,
     toDeploymentRecords,
     waitingDeployments,
 } from "./Deployments";
@@ -386,6 +387,24 @@ describe("unfinished deployments", () => {
         );
 
         expect(sorted.map((r) => r.runId)).toEqual([3, 2, 1]);
+    });
+});
+
+describe("shownDeployments", () => {
+    const running = record({ runId: 101, finishTime: "", result: "inProgress" });
+    const waiting = record({ runId: 102, recordId: 0, finishTime: "", result: "waitingForApproval" });
+    const finished = record({ runId: 100 });
+
+    it("keeps running and waiting deployments when the pipeline shows all deployments", () => {
+        const configs = new Map([["proj-1", config()]]);
+        expect(shownDeployments([finished, running, waiting], configs)).toEqual([finished, running, waiting]);
+    });
+
+    it("keeps only completed deployments otherwise", () => {
+        for (const shown of ["completedDeployments", "completedRuns"] as const) {
+            const configs = new Map([["proj-1", config({ deploymentsShown: shown })]]);
+            expect(shownDeployments([finished, running, waiting], configs)).toEqual([finished]);
+        }
     });
 });
 

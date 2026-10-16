@@ -133,7 +133,10 @@ one on the default branch, so it cannot review the pull request that introduces 
   and against the links of completed runs). The list is computed from the last successful run as of
   now, so a link can still differ when another run succeeds first. Only the repository's own project
   is searched, and Azure Repos only. `DeploymentsResult.noRuns` lets the empty state ask for automatic
-  linking when neither source found anything.
+  linking when neither source found anything. A pipeline's **Show** setting
+  (`deploymentsShown`, unset means `all`) decides what is shown: `all`; `completedDeployments` drops
+  running and waiting deployments and skips the timeline read; `completedRuns` also leaves the
+  pipeline out of this lookup, so only Integrated in build links are used.
 - **Runs built from a Git tag never get an Integrated in build link** (verified: run 96294 on
   `refs/tags/24.0` listed the work item in `builds/{id}/workitems`, but no link was created). They show
   while in progress and disappear when they complete. Accepted as a limit: finding them means listing

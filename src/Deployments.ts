@@ -3,6 +3,7 @@ import {
     DeploymentRecord,
     DeploymentType,
     PipelineConfig,
+    deploymentsShown,
     mappingFor,
 } from "./Contracts";
 import type { Run } from "./Runs";
@@ -137,6 +138,21 @@ export function toDeploymentRecords(
             result: resultOf(record),
             finishTime: record.finishTime || "",
         }));
+}
+
+/**
+ * Deployments running or waiting for an approval are shown only for pipelines that show all
+ * deployments.
+ */
+export function shownDeployments(
+    deployments: DeploymentRecord[],
+    configs: Map<string, PipelineConfig>
+): DeploymentRecord[] {
+    return deployments.filter(
+        (deployment) =>
+            (deployment.result !== "inProgress" && deployment.result !== "waitingForApproval") ||
+            deploymentsShown(configs.get(pipelineKey(deployment.projectId, deployment.definitionId))) === "all"
+    );
 }
 
 /** An environment and its deployment records, as read. */

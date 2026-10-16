@@ -7,12 +7,13 @@ import {
     WorkItem,
     buildLinkIds,
     configsOf,
-    enabledDefinitions,
+    inProgressDefinitions,
     includesWorkItem,
     mapLimited,
     mergeRuns,
     repositoriesFromRelations,
     runOf,
+    showsAllDeployments,
     stagesWaitingForApproval,
 } from "./Runs";
 
@@ -59,14 +60,37 @@ describe("repositoriesFromRelations", () => {
     });
 });
 
-describe("enabledDefinitions", () => {
-    it("keeps the enabled pipelines of the project", () => {
+describe("inProgressDefinitions", () => {
+    it("keeps the enabled pipelines of the project that show runs in progress", () => {
         const configs = new Map(
-            [config(PROJECT, 27), config(PROJECT, 28, false), config(OTHER_PROJECT, 29)].map(
-                (c) => [c.id, c] as [string, PipelineConfig]
-            )
+            [
+                config(PROJECT, 27),
+                config(PROJECT, 28, false),
+                config(OTHER_PROJECT, 29),
+                { ...config(PROJECT, 30), deploymentsShown: "completedRuns" as const },
+                { ...config(PROJECT, 31), deploymentsShown: "completedDeployments" as const },
+                { ...config(PROJECT, 32), deploymentsShown: "all" as const },
+            ].map((c) => [c.id, c] as [string, PipelineConfig])
         );
-        expect(enabledDefinitions(configs, PROJECT)).toEqual([27]);
+        expect(inProgressDefinitions(configs, PROJECT)).toEqual([27, 31, 32]);
+    });
+});
+
+describe("showsAllDeployments", () => {
+    const configs = new Map(
+        [config(PROJECT, 27), { ...config(PROJECT, 28), deploymentsShown: "completedDeployments" as const }].map(
+            (c) => [c.id, c] as [string, PipelineConfig]
+        )
+    );
+    const build = (definitionId: number) => ({ id: 1, project: { id: PROJECT }, definition: { id: definitionId } });
+
+    it("is true when the pipeline shows all deployments, the default", () => {
+        expect(showsAllDeployments(build(27), configs)).toBe(true);
+    });
+
+    it("is false for completed deployments, or a pipeline with no settings", () => {
+        expect(showsAllDeployments(build(28), configs)).toBe(false);
+        expect(showsAllDeployments(build(29), configs)).toBe(false);
     });
 });
 

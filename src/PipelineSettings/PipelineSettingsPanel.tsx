@@ -9,11 +9,16 @@ import { IListBoxItem } from "azure-devops-ui/ListBox";
 import { DropdownSelection } from "azure-devops-ui/Utilities/DropdownSelection";
 
 import {
+    DEPLOYMENTS_SHOWN,
+    DEPLOYMENTS_SHOWN_DESCRIPTIONS,
+    DEPLOYMENTS_SHOWN_LABELS,
     DEPLOYMENT_TYPES,
     DEPLOYMENT_TYPE_LABELS,
     DeploymentType,
+    DeploymentsShown,
     EnvironmentMapping,
     PipelineConfig,
+    deploymentsShown,
 } from "../Contracts";
 import PipelineRunService, { EnvironmentSummary } from "../Services/PipelineRunService";
 import PipelineConfigService from "../Services/PipelineConfigService";
@@ -28,6 +33,11 @@ const TYPE_ITEMS: IListBoxItem<DeploymentType>[] = DEPLOYMENT_TYPES.map((type) =
     text: DEPLOYMENT_TYPE_LABELS[type],
 }));
 
+const SHOWN_ITEMS: IListBoxItem<DeploymentsShown>[] = DEPLOYMENTS_SHOWN.map((shown) => ({
+    id: shown,
+    text: DEPLOYMENTS_SHOWN_LABELS[shown],
+}));
+
 function PipelineSettingsPanel(): JSX.Element {
     const [definitionId, setDefinitionId] = React.useState(0);
     const [config, setConfig] = React.useState<PipelineConfig | undefined>(undefined);
@@ -36,6 +46,7 @@ function PipelineSettingsPanel(): JSX.Element {
     const [error, setError] = React.useState<string | undefined>(undefined);
     const panelRef = React.useRef<{ close?: (result?: unknown) => void } | undefined>(undefined);
     const selections = React.useRef(new Map<string, DropdownSelection>());
+    const shownSelection = React.useRef(new DropdownSelection());
 
     React.useEffect(() => {
         (async () => {
@@ -58,7 +69,9 @@ function PipelineSettingsPanel(): JSX.Element {
 
             const environmentsLoad = PipelineRunService.environmentsForPipeline(id);
 
-            setConfig(await PipelineConfigService.get(id));
+            const loaded = await PipelineConfigService.get(id);
+            shownSelection.current.select(DEPLOYMENTS_SHOWN.indexOf(deploymentsShown(loaded)));
+            setConfig(loaded);
             setStatus("ready");
 
             setEnvironments(await environmentsLoad);
@@ -153,6 +166,12 @@ function PipelineSettingsPanel(): JSX.Element {
 
                         {config.enabled && (
                             <>
+                                <div className="dsb-note">
+                                    Work items need to be linked to a run. Turn on{" "}
+                                    <strong>Automatically link work items included in this run</strong> in the
+                                    pipeline's <strong>Settings</strong>.
+                                </div>
+
                                 <div className="dsb-table">
                                     <div className="dsb-table-head">
                                         <span className="dsb-col-environment">Environment</span>
@@ -204,13 +223,20 @@ function PipelineSettingsPanel(): JSX.Element {
                                     })}
                                 </div>
 
-                                {environments && environments.length > 0 && (
-                                    <div className="dsb-note">
-                                        Work items need to be linked to a run. Turn on{" "}
-                                        <strong>Automatically link work items included in this run</strong> in
-                                        the pipeline's <strong>Settings</strong>.
-                                    </div>
-                                )}
+                                <div className="dsb-option">
+                                    <span>Show</span>
+                                    <Dropdown<DeploymentsShown>
+                                        className="dsb-option-dropdown"
+                                        items={SHOWN_ITEMS}
+                                        selection={shownSelection.current}
+                                        onSelect={(_event, item) =>
+                                            setConfig({ ...config, deploymentsShown: item.id as DeploymentsShown })
+                                        }
+                                    />
+                                </div>
+                                <div className="dsb-note">
+                                    {DEPLOYMENTS_SHOWN_DESCRIPTIONS[deploymentsShown(config)]}
+                                </div>
                             </>
                         )}
                     </>

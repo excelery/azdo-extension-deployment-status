@@ -5,11 +5,12 @@ import {
     TimelineRecord,
     WorkItem,
     buildLinkIds,
-    enabledDefinitions,
+    inProgressDefinitions,
     includesWorkItem,
     mapLimited,
     repositoriesFromRelations,
     runOf,
+    showsAllDeployments,
     stagesWaitingForApproval,
 } from "../Runs";
 import AzdoClient from "./AzdoClient";
@@ -71,14 +72,18 @@ class RunService {
         const runs = await mapLimited(candidates, CONCURRENT_REQUESTS, async (build) => {
             // A linked run is in progress again when a stage is rerun; it is known to include the work item.
             const included = linked.has(build.id) || (await this.includes(build, workItem.id));
-            return included ? runOf(build, await this.stagesWaitingForApproval(build)) : undefined;
+            if (!included) {
+                return undefined;
+            }
+            const showsWaiting = showsAllDeployments(build, workItem.configs);
+            return runOf(build, showsWaiting ? await this.stagesWaitingForApproval(build) : []);
         });
         return runs.filter((run): run is Run => !!run);
     }
 
-    /** The repository's runs in progress, of the pipelines in its project with Boards Integration enabled. */
+    /** The repository's runs in progress, of the pipelines in its project that show them (see `inProgressDefinitions`). */
     private async runsInProgress(repository: Repository, workItem: WorkItem): Promise<Build[]> {
-        const definitionIds = enabledDefinitions(workItem.configs, repository.projectId);
+        const definitionIds = inProgressDefinitions(workItem.configs, repository.projectId);
         const builds: Build[] = [];
         let continuationToken: string | undefined;
 

@@ -35,6 +35,12 @@ In pipeline menu, open ⋯ > Boards Integration.
 
 Choose a deployment type for each environment.
 
+Choose which deployments to show:
+
+- All deployments (default): includes deployments in progress or waiting for approvals and checks.
+- Completed deployments: includes completed deployments from runs still in progress.
+- Completed runs only: includes only deployments from completed runs.
+
 ![Boards Integration panel](static/screenshots/boards-integration.png)
 
 ### 3. Add the new control to your work item forms

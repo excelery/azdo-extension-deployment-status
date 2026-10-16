@@ -37,6 +37,17 @@ body,
   padding: 12px 0;
 }
 
+.dsb-option {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.dsb-option-dropdown {
+  width: 220px;
+}
+
 .dsb-table {
   margin-top: 16px;
   max-width: 100%;
