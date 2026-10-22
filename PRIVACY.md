@@ -17,8 +17,8 @@ telemetry and no third-party services.
 ## Data stored
 
 One configuration document per pipeline, in Azure DevOps extension data storage within your
-organization. It contains the pipeline ID, whether reporting is enabled, and the deployment type of
-each environment. Uninstalling the extension removes it.
+organization. It contains the pipeline ID, whether reporting is enabled, which deployments are shown,
+and the deployment type of each environment. Uninstalling the extension removes it.
 
 The extension does not use cookies, browser storage, tracking or analytics.
 
