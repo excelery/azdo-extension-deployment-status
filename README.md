@@ -2,7 +2,7 @@
 
 This extension brings the Classic release pipeline feature [Automatically link work items to releases and report deployment status to a work item](https://learn.microsoft.com/en-us/azure/devops/pipelines/integrations/configure-pipelines-work-tracking#classic-report-boards) to YAML pipelines that deploy to Azure DevOps environments.
 
-The Azure DevOps team has this feature on the [roadmap](https://learn.microsoft.com/en-us/azure/devops/release-notes/roadmap/2024/boards-yaml-stage-status-on-work-item). This extension should be considered as a temporary workaround until it is released.
+The Azure DevOps team has this feature on the [roadmap](https://learn.microsoft.com/en-us/azure/devops/release-notes/roadmap/2024/boards-yaml-stage-status-on-work-item). But until there is built-in support for this, this extension can bridge the gap.
 
 The extension adds a custom control to Azure Boards work item forms that displays deployment status for YAML pipelines. It uses the same style as the classic Deployment control. But instead of using Integrated in release stage links, it finds the work item's runs and displays their [Deployment Jobs](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/deployment-jobs?view=azure-devops) targeting Environments.
 
@@ -11,9 +11,7 @@ Runs are found in two ways:
 - Completed runs: the associated build is identified using the work item's Integrated in build links.
 - Runs in progress, for example waiting for an approval, which is common for multi-stage pipelines: the extension identifies the associated builds using the commits or pull requests linked to the work item.
 
-This is needed because Integrated in build links are only added when a run completes.
-
-Azure DevOps does not create Integrated in build links for runs built from a Git tag. Those runs are shown while they are in progress, but not after they complete. To keep a release visible, run it from a branch instead of a tag.
+This dual approach is needed because Integrated in build links are only added when a run completes.
 
 The extension does not write data to work items; it only reads existing links. Uninstalling it will not affect your work items or any existing data.
 
