@@ -33,3 +33,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    groups:
+      # The CodeQL init, autobuild and analyze actions are released together
+      # and must stay on the same version.
+      codeql-action:
+        patterns:
+          - github/codeql-action*
