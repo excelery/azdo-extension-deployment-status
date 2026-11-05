@@ -51,6 +51,8 @@ Add the Deployment Status for YAML custom control to the group.
 
 ![Add the custom control](static/screenshots/add-control.png)
 
+The Deployment group with the custom control appears in the layout, in the same column as the built-in sections.
+
 ![Work item layout with the Deployment group and custom control](static/screenshots/layout.png)
 
 If not needed for classic release pipelines, Hide the built-in Deployment section.
