@@ -105,6 +105,13 @@ one on the default branch, so it cannot review the pull request that introduces 
   defines, which makes the install prompt warn about high privilege scopes. Verified with scoped PATs.
 - **`pipelineId` on `environmentdeploymentrecords` is ignored by the server.** Filter on
   `definition.id` in code or you will attribute other pipelines' environments to this one.
+- **Runs stuck on a later stage inherit every work item since the last completed run.** A run waiting for
+  an approval counts as in progress, so Azure DevOps never gets a new "last successful run" and
+  `builds/{id}/workitems` lists the same work items on each new run (verified: run 98813, in progress,
+  listed 32 work items including one closed a week earlier, while the environment's Work items tab showed
+  two). `firstDeployments` keeps only the first deployment per environment and stage: the first
+  success, else the earliest run running or waiting, else the earliest failure. Do not show every run
+  that lists the work item; one closed work item showed 23.
 - **A stage can have deployed to several environments over time**, so resolve by most recent deployment.
   Racing parallel requests and taking the first answer gives a different result run to run.
 - **The work item control reports its own height via `SDK.resize()` and must measure `.dsb-root`.**
