@@ -65,6 +65,8 @@ one on the default branch, so it cannot review the pull request that introduces 
   passes `--manifest-globs vss-extension.json "src/**/*.manifest.json"`.
 - **`configs/dev.json` vs `configs/release.json`**: the dev override sets `baseUri:
   https://localhost:3000` and a `-dev` extension id, so a dev build installs beside the real one.
+- Builds of `main` package and publish the release variant only (test, then prod). The dev variant is
+  built and published from `feature/*` and `bug/*` only.
 - Manifest changes need a repackage and reinstall. Code changes are picked up by the dev server alone.
 - The dev server uses port 3000. Another extension's dev server on the same port will win or lose the
   bind, and the loser's assets 404 inside Azure DevOps.

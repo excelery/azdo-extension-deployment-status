@@ -36,7 +36,8 @@ jobs:
 
   - task: PackageAzureDevOpsExtension@5
     displayName: Package (dev)
-    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    # Not from main: nothing publishes the dev build there.
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), ne(variables['Build.SourceBranch'], 'refs/heads/main'))
     inputs:
       rootFolder: '$(sourceDir)'
       patternManifest: |
