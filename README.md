@@ -4,7 +4,7 @@ This extension brings the Classic release pipeline feature [Automatically link w
 
 The Azure DevOps team has this feature on the [roadmap](https://learn.microsoft.com/en-us/azure/devops/release-notes/roadmap/2024/boards-yaml-stage-status-on-work-item). But until there is built-in support for this, this extension can bridge the gap.
 
-The extension adds a custom control to Azure Boards work item forms that displays deployment status for YAML pipelines. It uses the same style as the classic Deployment control. But instead of using Integrated in release stage links, it finds the work item's runs and displays their [Deployment Jobs](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/deployment-jobs?view=azure-devops) targeting Environments.
+The extension adds a custom control to Azure Boards work item forms that shows deployment status for YAML pipelines, in the same style as the classic Deployment control. Instead of relying on Integrated in release stage links, it finds the runs that belong to the work item and lists their [Deployment Jobs](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/deployment-jobs?view=azure-devops) that target [Environments](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/environments?view=azure-devops).
 
 Runs are found in two ways:
 
@@ -36,7 +36,7 @@ Choose a deployment type for each environment.
 Choose which deployments to show:
 
 - All deployments (default): includes deployments in progress or waiting for approvals and checks. In addition to completed deployments, this also displays stages waiting to be deployed.
-- Completed deployments: includes completed deployments from runs still in progress. This is typically the case for multi-stage pipelines waiting for a deployment to the next stage.
+- Completed deployments: includes completed deployments from runs still in progress. This is typically the case for multi-stage pipelines waiting for a deployment to the next stage, where the pipeline has not yet created an Integrated in build link.
 - Completed runs only: includes only deployments from completed runs. This is typically the case for a pipeline deploying to a single stage only. The integration only uses the Integrated in build link on the work item.
 
 ![Boards Integration panel](static/screenshots/boards-integration.png)
@@ -61,7 +61,7 @@ This extension requires read-only access to work items and builds. No data leave
 
 ## Support
 
-Report bugs and request features through [GitHub Issues](https://github.com/excelery/azdo-extension-deployment-status/issues). Please check existing issues before opening a new one.
+Report bugs and request features through [GitHub Issues](https://github.com/excelery/azdo-extension-deployment-status/issues). Work item linking is a fairly complex area. Before reporting a problem, check that the pipeline and the extension are configured as described above, and read [SUPPORT.md](https://github.com/excelery/azdo-extension-deployment-status/blob/main/SUPPORT.md), which lists the common causes. Please check existing issues before opening a new one.
 
 To report a vulnerability, follow [SECURITY.md](https://github.com/excelery/azdo-extension-deployment-status/blob/main/SECURITY.md).
 

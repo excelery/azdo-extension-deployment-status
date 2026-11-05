@@ -14,6 +14,8 @@
 
 ## Reporting an issue
 
+Work item linking is a fairly complex area. Before you report a problem, check that the pipeline and the extension are configured correctly, and that none of the causes in Troubleshooting applies.
+
 [Open an issue](https://github.com/excelery/azdo-extension-deployment-status/issues) and include:
 
 - The extension version, shown in **Organization settings > Extensions**

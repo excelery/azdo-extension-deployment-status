@@ -29,7 +29,7 @@ export const DEPLOYMENTS_SHOWN_LABELS: Record<DeploymentsShown, string> = {
 
 export const DEPLOYMENTS_SHOWN_DESCRIPTIONS: Record<DeploymentsShown, string> = {
     all: "Includes deployments in progress or waiting for approvals and checks. In addition to completed deployments, this also displays stages waiting to be deployed.",
-    completedDeployments: "Includes completed deployments from runs still in progress. This is typically the case for multi-stage pipelines waiting for a deployment to the next stage.",
+    completedDeployments: "Includes completed deployments from runs still in progress. This is typically the case for multi-stage pipelines waiting for a deployment to the next stage, where the pipeline has not yet created an Integrated in build link.",
     completedRuns: "Includes only deployments from completed runs. This is typically the case for a pipeline deploying to a single stage only. The integration only uses the Integrated in build link on the work item.",
 };
 
