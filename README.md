@@ -36,7 +36,7 @@ Choose a deployment type for each environment.
 Choose which deployments to show:
 
 - All deployments (default): includes deployments in progress or waiting for approvals and checks. In addition to completed deployments, this also displays stages waiting to be deployed.
-- Completed deployments: includes completed deployments from runs still in progress. This is typically the case for multi-stage pipelines waiting for a deployment to the next stage.
+- Completed deployments: includes completed deployments from runs still in progress. This is typically the case for multi-stage pipelines waiting for a deployment to the next stage, where the pipeline has not yet created an Integrated in build link.
 - Completed runs only: includes only deployments from completed runs. This is typically the case for a pipeline deploying to a single stage only. The integration only uses the Integrated in build link on the work item.
 
 ![Boards Integration panel](static/screenshots/boards-integration.png)
@@ -61,7 +61,7 @@ This extension requires read-only access to work items and builds. No data leave
 
 ## Support
 
-Report bugs and request features through [GitHub Issues](https://github.com/excelery/azdo-extension-deployment-status/issues). Please check existing issues before opening a new one.
+Report bugs and request features through [GitHub Issues](https://github.com/excelery/azdo-extension-deployment-status/issues). Work item linking is a fairly complex area. Before reporting a problem, check that the pipeline and the extension are configured as described above, and read [SUPPORT.md](https://github.com/excelery/azdo-extension-deployment-status/blob/main/SUPPORT.md), which lists the common causes. Please check existing issues before opening a new one.
 
 To report a vulnerability, follow [SECURITY.md](https://github.com/excelery/azdo-extension-deployment-status/blob/main/SECURITY.md).
 
