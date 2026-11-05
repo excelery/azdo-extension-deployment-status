@@ -22,8 +22,9 @@ trigger:
       - .vscode
       - .mcp.json
 
-# Pull requests are validated by GitHub Actions. Every push here publishes
-# private dev and test builds; main also publishes the private prod build.
+# Pull requests are validated by GitHub Actions. Feature and bug branches publish
+# the private dev and test builds; main publishes the private test and prod builds
+# and never the dev build, which points at localhost.
 pr: none
 
 variables:
@@ -36,7 +37,8 @@ stages:
 
 - stage: DeployDev
   dependsOn: Build
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+  # Not from main: the dev build loads its assets from localhost.
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), ne(variables['Build.SourceBranch'], 'refs/heads/main'))
   jobs:
   - template: .azure-pipelines/deploy.yml
     parameters:
