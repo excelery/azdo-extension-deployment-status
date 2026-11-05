@@ -270,6 +270,46 @@ function isLaterAttempt(a: DeploymentRecord, b: DeploymentRecord): boolean {
     return order < 0 || (order === 0 && a.recordId > b.recordId);
 }
 
+/**
+ * A run that waits on a later stage never completes, so Azure DevOps lists every work item since the last
+ * completed run again on each new run. Those later runs inherit the work item without introducing it, so
+ * only the first deployment per environment and stage is kept, as the environment's Work items tab does.
+ *
+ * The first successful run wins; when nothing succeeded, the earliest run still running or waiting for an
+ * approval; and when nothing else exists, the earliest failed one. Runs are ordered by run id, which grows
+ * with the time a run was queued.
+ */
+export function firstDeployments(records: DeploymentRecord[]): DeploymentRecord[] {
+    const first = new Map<string, DeploymentRecord>();
+    for (const record of records) {
+        const key = `${record.environmentId}/${record.stageName}`;
+        const kept = first.get(key);
+        if (!kept || isEarlierDeployment(record, kept)) {
+            first.set(key, record);
+        }
+    }
+    return Array.from(first.values());
+}
+
+/** How far a deployment got: a success beats an unfinished one, which beats a failure. */
+function progressOf(record: DeploymentRecord): number {
+    switch (record.result) {
+        case "succeeded":
+        case "partiallySucceeded":
+            return 2;
+        case "inProgress":
+        case "waitingForApproval":
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+function isEarlierDeployment(a: DeploymentRecord, b: DeploymentRecord): boolean {
+    const progress = progressOf(a) - progressOf(b);
+    return progress > 0 || (progress === 0 && a.runId < b.runId);
+}
+
 export function groupDeployments(
     records: DeploymentRecord[],
     configs: Map<string, PipelineConfig>
@@ -299,7 +339,7 @@ export function groupDeployments(
         const pipelines: PipelineDeployments[] = [];
 
         byPipeline.forEach((pipelineRecords) => {
-            const history = latestAttempts(pipelineRecords).sort(byMostRecent);
+            const history = firstDeployments(latestAttempts(pipelineRecords)).sort(byMostRecent);
             pipelines.push({
                 projectId: history[0].projectId,
                 definitionId: history[0].definitionId,

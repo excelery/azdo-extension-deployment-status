@@ -4,6 +4,7 @@ import { DeploymentRecord, PipelineConfig, mappingFor } from "./Contracts";
 import {
     byMostRecent,
     configsByPipeline,
+    firstDeployments,
     groupDeployments,
     latestAttempts,
     mappedEnvironments,
@@ -153,7 +154,7 @@ describe("mappedEnvironments", () => {
 
 describe("groupDeployments", () => {
     const configs = new Map<string, PipelineConfig>([
-        ["proj-1", config({ definitionId: 1, environments: { "10": { enabled: true, deploymentType: "production" } } })],
+        ["proj-1", config({ definitionId: 1, environments: { "10": { enabled: true, deploymentType: "production" }, "11": { enabled: true, deploymentType: "production" } } })],
         ["proj-2", config({ id: "proj-2", definitionId: 2, environments: { "20": { enabled: true, deploymentType: "development" } } })],
     ]);
 
@@ -175,7 +176,7 @@ describe("groupDeployments", () => {
 
     it("puts the most recent deployment first and exposes it as latest", () => {
         const older = record({ runId: 1, runName: "old", finishTime: "2026-09-01T00:00:00Z" });
-        const newer = record({ runId: 2, runName: "new", finishTime: "2026-09-10T00:00:00Z" });
+        const newer = record({ runId: 2, runName: "new", finishTime: "2026-09-10T00:00:00Z", environmentId: 11 });
 
         const [group] = groupDeployments([older, newer], configs);
         const pipeline = group.pipelines[0];
@@ -369,9 +370,17 @@ describe("unfinished deployments", () => {
 
     it("treats an unfinished deployment as the latest, whatever the API order", () => {
         const finished = record({ runId: 100, finishTime: "2026-09-01T12:00:00Z" });
-        const running = record({ runId: 101, finishTime: "", result: "inProgress" });
+        const running = record({ runId: 101, environmentId: 11, finishTime: "", result: "inProgress" });
         const configs = new Map([
-            ["proj-1", config({ environments: { "10": { enabled: true, deploymentType: "production" } } })],
+            [
+                "proj-1",
+                config({
+                    environments: {
+                        "10": { enabled: true, deploymentType: "production" },
+                        "11": { enabled: true, deploymentType: "production" },
+                    },
+                }),
+            ],
         ]);
 
         for (const records of [[finished, running], [running, finished]]) {
@@ -440,5 +449,100 @@ describe("record id", () => {
 describe("configsByPipeline skips settings saved outside a project", () => {
     it("skips configs saved without a project", () => {
         expect(configsByPipeline([config({ id: "unknown-1", definitionId: 1 })]).size).toBe(0);
+    });
+});
+
+describe("firstDeployments", () => {
+    it("keeps the first successful run per environment and drops the later runs that inherit the work item", () => {
+        const records = [
+            record({ runId: 30, runName: "c" }),
+            record({ runId: 10, runName: "a" }),
+            record({ runId: 20, runName: "b" }),
+        ];
+
+        expect(firstDeployments(records).map((r) => r.runName)).toEqual(["a"]);
+    });
+
+    it("prefers a later success over an earlier failure", () => {
+        const failed = record({ runId: 10, runName: "failed", result: "failed" });
+        const fixed = record({ runId: 20, runName: "fixed" });
+
+        expect(firstDeployments([failed, fixed]).map((r) => r.runName)).toEqual(["fixed"]);
+    });
+
+    it("counts a partially succeeded deployment as a success", () => {
+        const partial = record({ runId: 10, runName: "partial", result: "partiallySucceeded" });
+        const later = record({ runId: 20, runName: "later" });
+
+        expect(firstDeployments([later, partial]).map((r) => r.runName)).toEqual(["partial"]);
+    });
+
+    it("shows the earliest run waiting for an approval when nothing succeeded in the environment", () => {
+        const waiting = [20, 10, 30].map((runId) =>
+            record({ runId, runName: `run ${runId}`, result: "waitingForApproval", finishTime: "", recordId: 0 })
+        );
+
+        expect(firstDeployments(waiting).map((r) => r.runName)).toEqual(["run 10"]);
+    });
+
+    it("shows a running deployment when nothing succeeded, before a failed one", () => {
+        const failed = record({ runId: 10, runName: "failed", result: "failed" });
+        const running = record({ runId: 20, runName: "running", result: "inProgress", finishTime: "" });
+
+        expect(firstDeployments([failed, running]).map((r) => r.runName)).toEqual(["running"]);
+    });
+
+    it("shows the earliest failed deployment when the environment has nothing else", () => {
+        const records = [20, 10].map((runId) => record({ runId, runName: `run ${runId}`, result: "failed" }));
+
+        expect(firstDeployments(records).map((r) => r.runName)).toEqual(["run 10"]);
+    });
+
+    it("keeps environments and stages apart", () => {
+        const records = [
+            record({ environmentId: 10, runId: 10 }),
+            record({ environmentId: 10, runId: 20 }),
+            record({ environmentId: 11, runId: 20 }),
+            record({ environmentId: 10, runId: 20, stageName: "Other" }),
+        ];
+
+        expect(firstDeployments(records)).toHaveLength(3);
+    });
+
+    it("does not mutate its input", () => {
+        const input = [record({ runId: 20 }), record({ runId: 10 })];
+
+        firstDeployments(input);
+
+        expect(input.map((r) => r.runId)).toEqual([20, 10]);
+    });
+});
+
+describe("groupDeployments shows the first deployment per environment", () => {
+    const configs = new Map<string, PipelineConfig>([
+        [
+            "proj-1",
+            config({
+                definitionId: 1,
+                environments: {
+                    "10": { enabled: true, deploymentType: "development", environmentName: "alpha" },
+                    "11": { enabled: true, deploymentType: "production", environmentName: "prod" },
+                },
+            }),
+        ],
+    ]);
+
+    it("lists a work item once per environment although many later runs inherit it", () => {
+        const inherited = [10, 20, 30].map((runId) =>
+            record({ runId, runName: `run ${runId}`, environmentId: 10, environmentName: "alpha" })
+        );
+        const waiting = [20, 30].map((runId) =>
+            record({ runId, runName: `run ${runId}`, environmentId: 11, result: "waitingForApproval", finishTime: "", recordId: 0 })
+        );
+
+        const groups = groupDeployments([...inherited, ...waiting], configs);
+        const rows = groups.flatMap((group) => group.pipelines.flatMap((pipeline) => pipeline.history));
+
+        expect(rows.map((r) => `${r.environmentName}:${r.runName}`).sort()).toEqual(["alpha:run 10", "prod:run 20"]);
     });
 });
