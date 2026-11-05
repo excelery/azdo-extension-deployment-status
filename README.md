@@ -13,6 +13,8 @@ Runs are found in two ways:
 
 This dual approach is needed because Integrated in build links are only added when a run completes.
 
+Runs built from a Git tag do not get an Integrated in build link, so they are shown only while they are in progress.
+
 The extension does not write data to work items; it only reads existing links. Uninstalling it will not affect your work items or any existing data.
 
 ![Deployment section on a work item](static/screenshots/work-item.png)

@@ -282,7 +282,7 @@ function isLaterAttempt(a: DeploymentRecord, b: DeploymentRecord): boolean {
 export function firstDeployments(records: DeploymentRecord[]): DeploymentRecord[] {
     const first = new Map<string, DeploymentRecord>();
     for (const record of records) {
-        const key = `${record.environmentId}/${record.stageName}`;
+        const key = `${record.projectId}/${record.definitionId}/${record.environmentId}/${record.stageName}`;
         const kept = first.get(key);
         if (!kept || isEarlierDeployment(record, kept)) {
             first.set(key, record);

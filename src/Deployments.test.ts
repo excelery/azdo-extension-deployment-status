@@ -509,6 +509,29 @@ describe("firstDeployments", () => {
         expect(firstDeployments(records)).toHaveLength(3);
     });
 
+    it("keeps pipelines apart, also when their environments share an id in different projects", () => {
+        const records = [
+            record({ projectId: "a", definitionId: 1, environmentId: 10, runId: 10 }),
+            record({ projectId: "b", definitionId: 1, environmentId: 10, runId: 20 }),
+            record({ projectId: "a", definitionId: 2, environmentId: 10, runId: 30 }),
+        ];
+
+        expect(firstDeployments(records)).toHaveLength(3);
+    });
+
+    it("does not count a canceled, skipped or unknown deployment as a deployment", () => {
+        for (const result of ["canceled", "skipped", "unknown"] as const) {
+            const early = record({ runId: 10, runName: result, result });
+            const later = record({ runId: 20, runName: "later" });
+
+            expect(firstDeployments([early, later]).map((r) => r.runName)).toEqual(["later"]);
+        }
+    });
+
+    it("returns nothing for no records", () => {
+        expect(firstDeployments([])).toEqual([]);
+    });
+
     it("does not mutate its input", () => {
         const input = [record({ runId: 20 }), record({ runId: 10 })];
 
