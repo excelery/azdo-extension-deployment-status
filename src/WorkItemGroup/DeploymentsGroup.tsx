@@ -168,7 +168,7 @@ function PipelineRow(props: { pipeline: PipelineDeployments; urls: Urls }): JSX.
                         onClick={(event) => event.stopPropagation()}
                         title={pipeline.pipelineName}
                     >
-                        {pipeline.pipelineName} ({pipeline.history.length})
+                        {pipeline.pipelineName}
                     </a>
                     <span className="dsb-pipeline-subtitle">
                         {whenOf(latest)} on {latest.environmentName || latest.stageName}
