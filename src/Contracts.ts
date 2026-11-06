@@ -43,8 +43,8 @@ export type StageSymbol = "completed" | "waiting" | "notStarted";
 
 export const DEPLOYMENTS_SHOWN_SYMBOLS: Record<DeploymentsShown, StageSymbol[]> = {
     all: ["completed", "completed", "completed", "waiting", "notStarted"],
-    completedDeployments: ["completed", "completed", "completed", "completed", "completed"],
-    completedRuns: ["completed", "completed", "completed", "completed", "notStarted"],
+    completedDeployments: ["completed", "completed", "completed", "completed", "notStarted"],
+    completedRuns: ["completed", "completed", "completed", "completed", "completed"],
 };
 
 const SYMBOL_WORDS: Record<StageSymbol, string> = {

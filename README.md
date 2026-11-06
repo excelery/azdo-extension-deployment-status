@@ -42,8 +42,8 @@ Choose which deployments to show:
 | Symbols | Option | What is shown |
 |---|---|---|
 | ![Three completed stages, one waiting, one not started](static/screenshots/shown-all.png) | All deployments (default) | Includes deployments in progress or waiting for approvals and checks. In addition to completed deployments, this also displays stages waiting to be deployed. |
-| ![Five completed stages](static/screenshots/shown-completed-deployments.png) | Completed deployments | Includes completed deployments from runs still in progress. This is typically the case for multi-stage pipelines waiting for a deployment to the next stage, where the pipeline has not yet created an Integrated in build link. |
-| ![Four completed stages, one not started](static/screenshots/shown-completed-runs.png) | Completed runs only | Includes only deployments from completed runs. This is typically the case for a pipeline deploying to a single stage only. The integration only uses the Integrated in build link on the work item. |
+| ![Four completed stages, one not started](static/screenshots/shown-completed-deployments.png) | Completed deployments | Includes completed deployments from runs still in progress. This is typically the case for multi-stage pipelines waiting for a deployment to the next stage, where the pipeline has not yet created an Integrated in build link. |
+| ![Five completed stages](static/screenshots/shown-completed-runs.png) | Completed runs only | Includes only deployments from completed runs. This is typically the case for a pipeline deploying to a single stage only. The integration only uses the Integrated in build link on the work item. |
 
 ![Boards Integration panel](static/screenshots/boards-integration.png)
 
