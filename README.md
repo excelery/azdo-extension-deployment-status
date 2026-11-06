@@ -6,19 +6,13 @@ The Azure DevOps team has this feature on the [roadmap](https://learn.microsoft.
 
 The extension adds a custom control to Azure Boards work item forms that shows deployment status for YAML pipelines, in the same style as the classic Deployment control. Instead of relying on Integrated in release stage links, it finds the runs that belong to the work item and lists their [Deployment Jobs](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/deployment-jobs?view=azure-devops) that target [Environments](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/environments?view=azure-devops).
 
-Runs are found in three ways:
-
-- Completed runs: the associated build is identified using the work item's Integrated in build links.
-- Runs in progress, for example waiting for an approval, which is common for multi-stage pipelines: the extension identifies the associated builds using the commits or pull requests linked to the work item.
-- Other completed runs of the same pipeline that were built from the same commit as a linked run. A pipeline that builds a commit again for the next environment gets no work items on the second run, because Azure DevOps lists only the commits since the last successful run, so that run has no Integrated in build link.
-
-Integrated in build links are only added when a run completes, which is why runs in progress are found separately.
-
-Runs built from a Git tag do not get an Integrated in build link, so they are shown only while they are in progress.
-
 The extension does not write data to work items; it only reads existing links. Uninstalling it will not affect your work items or any existing data.
 
 ![Deployment section on a work item](static/screenshots/work-item.png)
+
+## How deployment status is found
+
+Azure DevOps links a work item to a pipeline run when the run includes its changes. The extension follows these links, reads where each run was deployed, and shows the result on the work item. [SUPPORT.md](https://github.com/excelery/azdo-extension-deployment-status/blob/main/SUPPORT.md) describes how the runs are found.
 
 ## Get started
 
