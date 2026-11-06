@@ -37,11 +37,14 @@ body,
   padding: 12px 0;
 }
 
+/* The Show setting is a section of its own, set apart from the environment list by space and a line. */
 .dsb-option {
   align-items: center;
+  border-top: 1px solid rgba(var(--palette-neutral-20, 0, 0, 0), 0.4);
   display: flex;
   gap: 12px;
-  margin-top: 16px;
+  margin-top: 28px;
+  padding-top: 24px;
 }
 
 .dsb-option > span {
