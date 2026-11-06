@@ -14,6 +14,8 @@ import {
     repositoriesFromRelations,
     runOf,
     showsAllDeployments,
+    siblingPipelines,
+    siblingRuns,
     stagesWaitingForApproval,
 } from "./Runs";
 
@@ -281,6 +283,57 @@ describe("runOf", () => {
 
     it("leaves the pipeline unknown for a run the lookup did not return", () => {
         expect(runOf({ id: 7 }).pipeline).toBeUndefined();
+    });
+});
+
+const COMMIT = "635a282a1f0e4b6a8c3d5e7f9a1b2c3d4e5f6a7b";
+
+function built(id: number, definitionId = 27, commit: string | null = COMMIT, finishTime = "2026-11-03T08:45:00Z") {
+    return runOf({
+        id,
+        buildNumber: `r${id}`,
+        project: { id: PROJECT },
+        definition: { id: definitionId, name: "Pimcore Deploy" },
+        sourceVersion: commit ?? undefined,
+        finishTime,
+    });
+}
+
+describe("siblingPipelines", () => {
+    const configs = new Map([[`${PROJECT}-27`, config(PROJECT, 27)]]);
+
+    it("names the pipeline of a linked run, with the time its first linked run finished", () => {
+        expect(siblingPipelines([built(2, 27, COMMIT, "2026-11-04T10:00:00Z"), built(1)], configs)).toEqual([
+            { projectId: PROJECT, definitionId: 27, since: "2026-11-03T08:45:00Z" },
+        ]);
+    });
+
+    it("leaves out a pipeline that is not set up, and a run that does not say its commit", () => {
+        expect(siblingPipelines([built(1)], new Map([[`${PROJECT}-27`, config(PROJECT, 27, false)]]))).toEqual([]);
+        expect(siblingPipelines([built(1)], new Map())).toEqual([]);
+        expect(siblingPipelines([built(1, 27, null), runOf({ id: 9 })], configs)).toEqual([]);
+    });
+});
+
+describe("siblingRuns", () => {
+    const build = (id: number, definitionId = 27, commit = COMMIT) => ({
+        id,
+        buildNumber: `r${id}`,
+        project: { id: PROJECT },
+        definition: { id: definitionId, name: "Pimcore Deploy" },
+        sourceVersion: commit,
+    });
+
+    it("takes a run of the pipeline that was built from the same commit as a linked run", () => {
+        expect(siblingRuns([built(98609)], [build(98665)]).map((run) => run.id)).toEqual([98665]);
+    });
+
+    it("leaves out a run of another commit, of another pipeline, or one that is linked already", () => {
+        expect(siblingRuns([built(98609)], [build(5, 27, "ccccccc"), build(6, 99), build(98609)])).toEqual([]);
+    });
+
+    it("takes a run once", () => {
+        expect(siblingRuns([built(98609)], [build(98665), build(98665)])).toHaveLength(1);
     });
 });
 
