@@ -10,17 +10,17 @@ describe("symbols for the Show setting", () => {
         expect(DEPLOYMENTS_SHOWN_SYMBOLS.all).toEqual(["completed", "completed", "completed", "waiting", "notStarted"]);
     });
 
-    it("completed deployments shows only completed stages", () => {
-        expect(DEPLOYMENTS_SHOWN_SYMBOLS.completedDeployments).toEqual(Array(5).fill("completed"));
+    it("completed deployments shows the completed stages of a run that is still going, without the waiting one", () => {
+        expect(DEPLOYMENTS_SHOWN_SYMBOLS.completedDeployments).toEqual(["completed", "completed", "completed", "completed", "notStarted"]);
     });
 
-    it("completed runs only is like all deployments, without a waiting stage", () => {
-        expect(DEPLOYMENTS_SHOWN_SYMBOLS.completedRuns).toEqual(["completed", "completed", "completed", "completed", "notStarted"]);
+    it("completed runs only shows only runs that are completed in full", () => {
+        expect(DEPLOYMENTS_SHOWN_SYMBOLS.completedRuns).toEqual(Array(5).fill("completed"));
     });
 
     it("describes the symbols in words for a screen reader", () => {
         expect(symbolsLabel("all")).toBe("3 completed, 1 waiting, 1 not started");
-        expect(symbolsLabel("completedDeployments")).toBe("5 completed");
-        expect(symbolsLabel("completedRuns")).toBe("4 completed, 1 not started");
+        expect(symbolsLabel("completedDeployments")).toBe("4 completed, 1 not started");
+        expect(symbolsLabel("completedRuns")).toBe("5 completed");
     });
 });
