@@ -21,7 +21,9 @@ class DeploymentQueryService {
         const workItem = await this.openWorkItem();
 
         const [completed, running] = await Promise.all([
-            RunService.completedRuns(workItem),
+            RunService.completedRuns(workItem).then(async (linked) =>
+                linked.concat(await RunService.siblingRuns(workItem, linked))
+            ),
             RunService.runningRuns(workItem),
         ]);
         const runs = mergeRuns(completed, running);

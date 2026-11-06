@@ -6,12 +6,13 @@ The Azure DevOps team has this feature on the [roadmap](https://learn.microsoft.
 
 The extension adds a custom control to Azure Boards work item forms that shows deployment status for YAML pipelines, in the same style as the classic Deployment control. Instead of relying on Integrated in release stage links, it finds the runs that belong to the work item and lists their [Deployment Jobs](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/deployment-jobs?view=azure-devops) that target [Environments](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/environments?view=azure-devops).
 
-Runs are found in two ways:
+Runs are found in three ways:
 
 - Completed runs: the associated build is identified using the work item's Integrated in build links.
 - Runs in progress, for example waiting for an approval, which is common for multi-stage pipelines: the extension identifies the associated builds using the commits or pull requests linked to the work item.
+- Other completed runs of the same pipeline that were built from the same commit as a linked run. A pipeline that builds a commit again for the next environment gets no work items on the second run, because Azure DevOps lists only the commits since the last successful run, so that run has no Integrated in build link.
 
-This dual approach is needed because Integrated in build links are only added when a run completes.
+Integrated in build links are only added when a run completes, which is why runs in progress are found separately.
 
 Runs built from a Git tag do not get an Integrated in build link, so they are shown only while they are in progress.
 
@@ -43,7 +44,7 @@ Choose which deployments to show:
 |---|---|---|
 | ![Three completed stages, one waiting, one not started](static/screenshots/shown-all.png) | All deployments (default) | Includes deployments in progress or waiting for approvals and checks. In addition to completed deployments, this also displays stages waiting to be deployed. |
 | ![Four completed stages, one not started](static/screenshots/shown-completed-deployments.png) | Completed deployments | Includes completed deployments from runs still in progress. This is typically the case for multi-stage pipelines waiting for a deployment to the next stage, where the pipeline has not yet created an Integrated in build link. |
-| ![Five completed stages](static/screenshots/shown-completed-runs.png) | Completed runs only | Includes only deployments from completed runs. This is typically the case for a pipeline deploying to a single stage only. The integration only uses the Integrated in build link on the work item. |
+| ![Five completed stages](static/screenshots/shown-completed-runs.png) | Completed runs only | Includes only deployments from completed runs. This is typically the case for a pipeline deploying to a single stage only. |
 
 ![Boards Integration panel](static/screenshots/boards-integration.png)
 
