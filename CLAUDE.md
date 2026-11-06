@@ -36,7 +36,7 @@ For text users see (Marketplace page, manifest, menus, panels, messages):
 | `pipeline-settings-panel` | `ms.vss-web.external-content` | (opened by the action) | `src/PipelineSettings/PipelineSettingsPanel.tsx` |
 
 There is no preview feature flag: the work item control and the menu action show wherever the extension
-is installed. The extension stays private, shared only with the organizations listed in the pipeline.
+is installed. The dev and test builds stay private, shared only with the organizations listed in the pipeline; the prod build is listed publicly on the Marketplace (`publicpreview`).
 
 The menu item reads **Boards Integration** with `order: 35`. Scopes are `vso.work` and `vso.build`,
 both read-only. `static/logo.png` is the only image asset.

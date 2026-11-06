@@ -94,9 +94,8 @@ jobs:
             ${{ if eq(parameters.environment, 'prod') }}:
               extensionName: '$(extensionName)'
             extensionVersion: '$(Build.BuildNumber)'
-            # All builds are private and shared with selected organizations.
-            # Prod keeps the Preview flag; switch it to publicpreview to list
-            # it publicly.
+            # Dev and test builds are private and shared with selected
+            # organizations. Prod is listed publicly and keeps the Preview flag.
             ${{ if eq(parameters.environment, 'dev') }}:
               shareWith: '$(shareWith)'
               extensionVisibility: private
@@ -104,8 +103,7 @@ jobs:
               shareWith: '$(testShareWith)'
               extensionVisibility: private
             ${{ if eq(parameters.environment, 'prod') }}:
-              shareWith: '$(prodShareWith)'
-              extensionVisibility: privatepreview
+              extensionVisibility: publicpreview
             noWaitValidation: true
 
         - task: IsAzureDevOpsExtensionValid@5
