@@ -12,15 +12,7 @@ The extension does not write data to work items; it only reads existing links. U
 
 ## How deployment status is found
 
-Azure DevOps links a work item to a pipeline run when the run includes its changes. The extension follows these links, reads where each run was deployed, and shows the result on the work item.
-
-The extension finds runs in three ways:
-
-- Through the Integrated in build links on the work item. Azure DevOps adds a link when a run completes. This needs Automatically link work items included in this run, turned on in the pipeline settings.
-- For runs in progress, which have no link yet, through the commits and pull requests linked to the work item. A run is included when Azure DevOps lists the work item on it. This step is bypassed with Completed runs only setting.
-- Through the pipeline of a linked run. Another completed run of that pipeline is included when it was built from the same commit. This covers the case where the same commit is built again and the pipeline gets no linked work items.
-
-For each environment, the first deployment of the work item is shown.
+Azure DevOps links a work item to a pipeline run when the run includes its changes. The extension follows these links, reads where each run was deployed, and shows the result on the work item. [SUPPORT.md](https://github.com/excelery/azdo-extension-deployment-status/blob/main/SUPPORT.md) describes how the runs are found.
 
 ## Get started
 
