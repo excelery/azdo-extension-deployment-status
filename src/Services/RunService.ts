@@ -11,6 +11,8 @@ import {
     repositoriesFromRelations,
     runOf,
     showsAllDeployments,
+    siblingPipelines,
+    siblingRuns,
     stagesWaitingForApproval,
 } from "../Runs";
 import AzdoClient from "./AzdoClient";
@@ -56,6 +58,26 @@ class RunService {
 
         const found = new Map(builds.map((build) => [build.id, build]));
         return runIds.map((id) => runOf(found.get(id) || { id }));
+    }
+
+    /** The runs of the linked runs' pipelines built from the same commit. See `siblingPipelines`. */
+    public async siblingRuns(workItem: WorkItem, linked: Run[]): Promise<Run[]> {
+        const pages = await Promise.all(
+            siblingPipelines(linked, workItem.configs).map(async ({ projectId, definitionId, since }) => {
+                try {
+                    const body = await AzdoClient.get<{ value: Build[] }>(
+                        `_apis/build/builds?definitions=${definitionId}&statusFilter=completed` +
+                            `&minTime=${encodeURIComponent(since)}&queryOrder=finishTimeAscending&$top=${RUNS_PER_PAGE}`,
+                        "7.1",
+                        projectId
+                    );
+                    return (body && body.value) || [];
+                } catch {
+                    return [];
+                }
+            })
+        );
+        return siblingRuns(linked, pages.reduce((all, some) => all.concat(some), [] as Build[]));
     }
 
     /**

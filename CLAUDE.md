@@ -133,7 +133,7 @@ one on the default branch, so it cannot review the pull request that introduces 
 - **An environment deployment's Changes and Work items tabs stay empty unless the deployment job runs
   `- checkout: self`** (verified). Deployment jobs check out nothing by default. The extension doesn't
   depend on those tabs, but run links open that page, so users notice.
-- **Runs come from two sources, combined.** Completed runs are the Integrated in build links. Those
+- **Runs come from three sources, combined.** Completed runs are the Integrated in build links. Those
   appear only when a run completes, so they never show a run waiting on an approval. For runs in
   progress, `RunService.runningRuns` takes the repositories of the work item's commit and pull request
   links, lists their runs in progress (`statusFilter=inProgress`, only pipelines with Boards Integration
@@ -145,10 +145,18 @@ one on the default branch, so it cannot review the pull request that introduces 
   linking when neither source found anything. A pipeline's **Show** setting
   (`deploymentsShown`, unset means `all`) decides what is shown: `all`; `completedDeployments` drops
   running and waiting deployments and skips the timeline read; `completedRuns` also leaves the
-  pipeline out of this lookup, so only Integrated in build links are used.
+  pipeline out of this lookup, so runs in progress are not shown. The third source applies in every mode (see the next point).
+- **A run of a commit that was built before gets no work items and no link.** Azure DevOps lists the
+  commits since the pipeline's last successful run, so a pipeline that builds one commit again for the
+  next environment (verified: runs 98609 for beta and 98665 for prod, both `release/1.1.0` at
+  `635a282a`; the second showed 0 work items) leaves the second run without a link. `RunService.siblingRuns`
+  adds the completed runs of the linked runs' pipelines that were built from the same commit: one request
+  per pipeline, from the finish time of its first linked run. It finds nothing without a linked run of
+  that commit in the same pipeline.
 - **Runs built from a Git tag never get an Integrated in build link** (verified: run 96294 on
   `refs/tags/24.0` listed the work item in `builds/{id}/workitems`, but no link was created). They show
-  while in progress and disappear when they complete. Accepted as a limit: finding them means listing
+  while in progress and disappear when they complete, unless a linked run of the same pipeline was built
+  from the same commit (the point above). Accepted as a limit: finding them means listing
   and filtering completed runs (`branchName=refs/tags/*` returns nothing), which was ruled out.
 - **A stage waiting for an approval has no deployment record.** The run's timeline shows it: a
   `Checkpoint.Approval` record in progress under the stage. It is placed in the environment where the

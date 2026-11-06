@@ -34,6 +34,9 @@ export interface Run {
     pipeline?: Pipeline;
     /** Stages waiting for an approval. They have no deployment record yet. */
     waitingStages: string[];
+    /** The commit the run was built from, and when it finished. */
+    commit?: string;
+    finishTime?: string;
 }
 
 /** A run as the builds API returns it, with the fields used here. */
@@ -42,6 +45,8 @@ export interface Build {
     buildNumber?: string;
     project?: { id: string };
     definition?: { id: number; name?: string };
+    sourceVersion?: string;
+    finishTime?: string;
 }
 
 /** An Azure Repos Git repository. */
@@ -136,7 +141,49 @@ export function runOf(build: Build, waitingStages: string[] = []): Run {
                 ? { projectId: project.id, definitionId: definition.id, name: definition.name || "" }
                 : undefined,
         waitingStages,
+        commit: build.sourceVersion,
+        finishTime: build.finishTime,
     };
+}
+
+/**
+ * Azure DevOps links the work items of the commits since a pipeline's last successful run. A run of the
+ * same commit built again, for the next environment for example, gets no work items and no link, but
+ * it carries the work item's change all the same. These are the pipelines to look for such runs in:
+ * the linked runs' pipelines that are set up, with the time of their first linked run, since later
+ * runs of the commit are the only ones that matter.
+ */
+export function siblingPipelines(
+    linked: Run[],
+    configs: Map<string, PipelineConfig>
+): { projectId: string; definitionId: number; since: string }[] {
+    const pipelines = new Map<string, { projectId: string; definitionId: number; since: string }>();
+    linked.forEach(({ pipeline, commit, finishTime }) => {
+        if (!pipeline || !commit || !finishTime) {
+            return;
+        }
+        const key = pipelineKey(pipeline.projectId, pipeline.definitionId);
+        const config = configs.get(key);
+        const known = pipelines.get(key);
+        if (config && config.enabled && (!known || finishTime < known.since)) {
+            pipelines.set(key, { projectId: pipeline.projectId, definitionId: pipeline.definitionId, since: finishTime });
+        }
+    });
+    return Array.from(pipelines.values());
+}
+
+/** The runs of the linked runs' pipelines that were built from the same commit and are not linked. */
+export function siblingRuns(linked: Run[], builds: Build[]): Run[] {
+    const same = new Set(linked.map((run) => run.pipeline && run.commit && `${run.pipeline.definitionId}/${run.commit}`));
+    const known = new Set(linked.map((run) => run.id));
+    const found = new Map<number, Run>();
+
+    builds.forEach((build) => {
+        if (build.definition && build.sourceVersion && !known.has(build.id) && same.has(`${build.definition.id}/${build.sourceVersion}`)) {
+            found.set(build.id, runOf(build));
+        }
+    });
+    return Array.from(found.values());
 }
 
 /**
