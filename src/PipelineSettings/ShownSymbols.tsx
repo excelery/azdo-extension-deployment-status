@@ -14,7 +14,8 @@ const CLOCK =
 const RING = "M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm0-1.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13z";
 
 const SIZE = 16;
-const GAP = 8;
+const GAP = 20;
+const SCALE = 1.25;
 
 function Symbol(props: { symbol: StageSymbol; x: number }): JSX.Element {
     const { symbol, x } = props;
@@ -43,8 +44,8 @@ export default function ShownSymbols(props: { shown: DeploymentsShown }): JSX.El
         <svg
             className="dsb-symbols"
             viewBox={`0 0 ${width} ${SIZE}`}
-            width={width}
-            height={SIZE}
+            width={width * SCALE}
+            height={SIZE * SCALE}
             role="img"
             aria-label={symbolsLabel(props.shown)}
             focusable="false"
@@ -52,11 +53,11 @@ export default function ShownSymbols(props: { shown: DeploymentsShown }): JSX.El
             {symbols.slice(1).map((_symbol, index) => (
                 <line
                     key={`link-${index}`}
-                    x1={(index + 1) * (SIZE + GAP) - GAP + 1}
-                    x2={(index + 1) * (SIZE + GAP) - 1}
+                    x1={(index + 1) * (SIZE + GAP) - GAP + 4}
+                    x2={(index + 1) * (SIZE + GAP) - 4}
                     y1={SIZE / 2}
                     y2={SIZE / 2}
-                    stroke={NEUTRAL}
+                    stroke="rgba(0, 0, 0, 0.22)"
                     strokeWidth="1.5"
                 />
             ))}

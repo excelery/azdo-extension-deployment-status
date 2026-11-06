@@ -44,8 +44,13 @@ body,
   margin-top: 16px;
 }
 
+.dsb-option > span {
+  min-width: 44px;
+}
+
+/* Under the dropdown: the label column (44px) and the gap (12px) come first. */
 .dsb-symbols-row {
-  margin-top: 12px;
+  margin: 16px 0 4px 56px;
 }
 
 .dsb-symbols {
