@@ -33,7 +33,7 @@ body,
 
 .dsb-note {
   color: rgba(var(--palette-neutral-100, 0, 0, 0), 0.55);
-  line-height: 18px;
+  line-height: 20px;
   padding: 12px 0;
 }
 
@@ -42,6 +42,19 @@ body,
   display: flex;
   gap: 12px;
   margin-top: 16px;
+}
+
+.dsb-option > span {
+  min-width: 44px;
+}
+
+/* Under the dropdown: the label column (44px) and the gap (12px) come first. */
+.dsb-symbols-row {
+  margin: 16px 0 12px 56px;
+}
+
+.dsb-symbols {
+  display: block;
 }
 
 .dsb-option-dropdown {
