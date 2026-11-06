@@ -22,6 +22,7 @@ import {
 } from "../Contracts";
 import PipelineRunService, { EnvironmentSummary } from "../Services/PipelineRunService";
 import PipelineConfigService from "../Services/PipelineConfigService";
+import ShownSymbols from "./ShownSymbols";
 
 import "azure-devops-ui/Core/override.css";
 import "./PipelineSettingsPanel.scss";
@@ -233,6 +234,9 @@ function PipelineSettingsPanel(): JSX.Element {
                                             setConfig({ ...config, deploymentsShown: item.id as DeploymentsShown })
                                         }
                                     />
+                                </div>
+                                <div className="dsb-symbols-row">
+                                    <ShownSymbols shown={deploymentsShown(config)} />
                                 </div>
                                 <div className="dsb-note">
                                     {DEPLOYMENTS_SHOWN_DESCRIPTIONS[deploymentsShown(config)]}

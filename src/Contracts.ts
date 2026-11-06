@@ -35,6 +35,34 @@ export const DEPLOYMENTS_SHOWN_DESCRIPTIONS: Record<DeploymentsShown, string> = 
 
 export const DEPLOYMENTS_SHOWN: DeploymentsShown[] = ["all", "completedDeployments", "completedRuns"];
 
+/**
+ * A row of five stages that shows the difference between the options: a completed stage, a stage that is
+ * waiting or running, and a stage that has not started. Shown in the Boards Integration panel and the README.
+ */
+export type StageSymbol = "completed" | "waiting" | "notStarted";
+
+export const DEPLOYMENTS_SHOWN_SYMBOLS: Record<DeploymentsShown, StageSymbol[]> = {
+    all: ["completed", "completed", "completed", "waiting", "notStarted"],
+    completedDeployments: ["completed", "completed", "completed", "completed", "completed"],
+    completedRuns: ["completed", "completed", "completed", "completed", "notStarted"],
+};
+
+const SYMBOL_WORDS: Record<StageSymbol, string> = {
+    completed: "completed",
+    waiting: "waiting",
+    notStarted: "not started",
+};
+
+/** The symbols in words, for a screen reader. */
+export function symbolsLabel(shown: DeploymentsShown): string {
+    const counts = new Map<StageSymbol, number>();
+    for (const symbol of DEPLOYMENTS_SHOWN_SYMBOLS[shown]) counts.set(symbol, (counts.get(symbol) || 0) + 1);
+    return (["completed", "waiting", "notStarted"] as StageSymbol[])
+        .filter((symbol) => counts.has(symbol))
+        .map((symbol) => `${counts.get(symbol)} ${SYMBOL_WORDS[symbol]}`)
+        .join(", ");
+}
+
 export function deploymentsShown(config: PipelineConfig | undefined): DeploymentsShown {
     return (config && config.deploymentsShown) || "all";
 }
