@@ -23,8 +23,8 @@ trigger:
       - .mcp.json
 
 # Pull requests are validated by GitHub Actions. Feature and bug branches publish
-# the private dev and test builds; main publishes the private test and prod builds
-# and never the dev build, which points at localhost.
+# the private dev and test builds; main publishes the private test build and the
+# public prod build, and never the dev build, which points at localhost.
 pr: none
 
 variables:
@@ -56,8 +56,8 @@ stages:
 
 - stage: DeployProd
   dependsOn: DeployTest
-  # Private prod build, shared with prodShareWithOrgs, from main only. Gate it
-  # with an approval on the prod environment.
+  # Public prod build, from main only. Gate it with an approval on the prod
+  # environment.
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   jobs:
   - template: .azure-pipelines/deploy.yml

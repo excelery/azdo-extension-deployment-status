@@ -8,10 +8,8 @@ variables:
   githubConnection: excelery
   githubRepository: excelery/azdo-extension-deployment-status
   shareWith: 'excelery'
-  # Test and prod can be shared with more organizations through the pipeline
-  # variables testShareWithOrgs and prodShareWithOrgs (comma-separated), set in
-  # Azure DevOps rather than here.
+  # Test can be shared with more organizations through the pipeline variable
+  # testShareWithOrgs (comma-separated), set in Azure DevOps rather than here.
   testShareWith: $[ coalesce(variables['testShareWithOrgs'], 'excelery') ]
-  prodShareWith: $[ coalesce(variables['prodShareWithOrgs'], 'excelery') ]
   majorVersion: 0
   minorVersion: 2
