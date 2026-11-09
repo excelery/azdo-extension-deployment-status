@@ -4,15 +4,23 @@ This extension brings the Classic release pipeline feature [Automatically link w
 
 The Azure DevOps team has this feature on the [roadmap](https://learn.microsoft.com/en-us/azure/devops/release-notes/roadmap/2024/boards-yaml-stage-status-on-work-item). But until there is built-in support for this, this extension can bridge the gap.
 
-The extension adds a custom control to Azure Boards work item forms that shows deployment status for YAML pipelines, in the same style as the classic Deployment control. Instead of relying on Integrated in release stage links, it finds the runs that belong to the work item and lists their [Deployment Jobs](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/deployment-jobs?view=azure-devops) that target [Environments](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/environments?view=azure-devops).
+The extension adds a custom control to Azure Boards work item forms that shows deployment status for YAML pipelines, in the same style as the classic Deployment control. Instead of relying on Integrated in release stage links, it finds the runs that belong to the work item and displays [Deployment Jobs](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/deployment-jobs?view=azure-devops) that target [Environments](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/environments?view=azure-devops).
 
 The extension does not write data to work items; it only reads existing links. Uninstalling it will not affect your work items or any existing data.
 
 ![Deployment section on a work item](static/screenshots/work-item.png)
 
-## How deployment status is found
+## How it works
 
-Azure DevOps links a work item to a pipeline run when the run includes its changes. The extension follows these links, reads where each run was deployed, and shows the result on the work item. [SUPPORT.md](https://github.com/excelery/azdo-extension-deployment-status/blob/main/SUPPORT.md) describes how the runs are found.
+The extension finds the pipeline runs that include the work item, and shows where each run was deployed.
+
+Runs are found through:
+
+- The Integrated in build links on the work item (completed runs).
+- The commits and pull requests linked to the work item (runs in progress, not used with Completed runs only).
+- Other runs of the same pipeline built from the same commit as a linked run.
+
+For each environment, the first deployment is shown.
 
 ## Get started
 
