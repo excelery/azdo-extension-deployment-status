@@ -59,7 +59,7 @@ cross-platform: PowerShell (`PowerShell@2`), not bash; Node comes from `UseNode@
 
 Environments:
 
-- **dev** (`<id>-dev`): every branch, private to the `excelery` org. Loads code from `localhost:3000`.
+- **dev** (`<id>-dev`): `feature/*` and `bug/*` branches, only when the run sets `publishDev` (run the pipeline manually and tick it), private to the `excelery` org. Loads code from `localhost:3000`.
 - **test** (`<id>-test`): every branch, private, after approval on the test environment, shared with `testShareWithOrgs`. The real build.
 - **prod** (`<id>`): `main` only, after test and approval on the prod environment. Public, marked Preview. Then creates GitHub release `v<version>` through the `excelery` GitHub service connection.
 
