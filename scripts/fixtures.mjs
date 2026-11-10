@@ -230,7 +230,10 @@ Work item: ${base}/_workitems/edit/${workItem}`);
 
 async function seed() {
     const { envs, runs, fail: failIn, skip } = args();
-    const pipeline = (await findPipeline()) || fail("Run setup first.");
+    const pipeline = await findPipeline();
+    if (!pipeline) {
+        fail("Run setup first.");
+    }
     const repo = await findRepo();
     const workItem = await findWorkItem();
 
@@ -333,7 +336,10 @@ async function writeConfig(definitionId, environments) {
 
 async function verify() {
     const pat = "AZDO_READ_PAT";
-    const workItem = (await findWorkItem(pat)) || fail("No fixture work item. Run setup.");
+    const workItem = await findWorkItem(pat);
+    if (!workItem) {
+        fail("No fixture work item. Run setup.");
+    }
     const { relations = [] } = await get(`${base}/_apis/wit/workitems/${workItem}?$expand=relations&api-version=7.1`, pat);
 
     const runIds = new Set(
