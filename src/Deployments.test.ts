@@ -13,7 +13,6 @@ import {
     relativeTime,
     shownDeployments,
     toDeploymentRecords,
-    waitingDeployments,
 } from "./Deployments";
 
 function config(overrides: Partial<PipelineConfig> = {}): PipelineConfig {

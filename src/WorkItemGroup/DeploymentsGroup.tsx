@@ -3,10 +3,9 @@ import * as ReactDOM from "react-dom";
 import * as SDK from "azure-devops-extension-sdk";
 import {
     IWorkItemNotificationListener,
-    WorkItemTrackingServiceIds,
 } from "azure-devops-extension-api/WorkItemTracking";
 
-import { DEPLOYMENT_TYPE_LABELS, DEPLOYMENT_TYPE_ORDER, DeploymentRecord } from "../Contracts";
+import { DEPLOYMENT_TYPE_LABELS, DeploymentRecord } from "../Contracts";
 import { orderGroups, relativeTime } from "../Deployments";
 import AzdoClient from "../Services/AzdoClient";
 import DeploymentQueryService, {
