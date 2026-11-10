@@ -38,8 +38,6 @@ In pipeline menu, open ⋯ > Boards Integration.
 
 Choose a deployment type for each environment.
 
-A work item shows one deployment per environment: the first run that deployed it successfully, or, when none has, the earliest run that is running or waiting for an approval. Later runs of the same pipeline contain the change as well, but do not introduce it.
-
 Choose which deployments to show:
 
 | Symbols | Option | What is shown |
