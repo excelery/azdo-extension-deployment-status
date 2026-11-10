@@ -23,9 +23,16 @@ trigger:
       - .mcp.json
 
 # Pull requests are validated by GitHub Actions. Feature and bug branches publish
-# the private dev and test builds; main publishes the private test build and the
-# public prod build, and never the dev build, which points at localhost.
+# the private test build, and the private dev build only when the run sets
+# publishDev. Main publishes the private test build and the public prod build,
+# and never the dev build, which points at localhost.
 pr: none
+
+parameters:
+- name: publishDev
+  displayName: Publish the dev build (feature and bug branches only)
+  type: boolean
+  default: false
 
 variables:
   - template: .azure-pipelines/variables.yml
@@ -34,15 +41,18 @@ stages:
 - stage: Build
   jobs:
   - template: .azure-pipelines/build.yml
-
-- stage: DeployDev
-  dependsOn: Build
-  # Not from main: the dev build loads its assets from localhost.
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), ne(variables['Build.SourceBranch'], 'refs/heads/main'))
-  jobs:
-  - template: .azure-pipelines/deploy.yml
     parameters:
-      environment: dev
+      publishDev: ${{ parameters.publishDev }}
+
+- ${{ if eq(parameters.publishDev, true) }}:
+  - stage: DeployDev
+    dependsOn: Build
+    # Not from main: the dev build loads its assets from localhost.
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), ne(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+    - template: .azure-pipelines/deploy.yml
+      parameters:
+        environment: dev
 
 - stage: DeployTest
   dependsOn: Build

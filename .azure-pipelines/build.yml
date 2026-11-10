@@ -1,3 +1,8 @@
+parameters:
+- name: publishDev
+  type: boolean
+  default: false
+
 jobs:
 - job: Build
   # The self-hosted agent: the Microsoft-hosted free tier ran out of minutes.
@@ -34,20 +39,21 @@ jobs:
     inputs:
       version: 'v0.x'
 
-  - task: PackageAzureDevOpsExtension@5
-    displayName: Package (dev)
-    # Not from main: nothing publishes the dev build there.
-    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), ne(variables['Build.SourceBranch'], 'refs/heads/main'))
-    inputs:
-      rootFolder: '$(sourceDir)'
-      patternManifest: |
-        vss-extension.json
-        src/**/*.manifest.json
-      publisherId: '$(publisherId)'
-      extensionVersion: '$(Build.BuildNumber)'
-      updateTasksVersion: true
-      outputPath: '$(extensionId)-dev-$(Build.BuildNumber).vsix'
-      arguments: '--overrides-file configs/dev.json --manifest-globs vss-extension.json "src/**/*.manifest.json"'
+  - ${{ if eq(parameters.publishDev, true) }}:
+    - task: PackageAzureDevOpsExtension@5
+      displayName: Package (dev)
+      # Not from main: nothing publishes the dev build there.
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), ne(variables['Build.SourceBranch'], 'refs/heads/main'))
+      inputs:
+        rootFolder: '$(sourceDir)'
+        patternManifest: |
+          vss-extension.json
+          src/**/*.manifest.json
+        publisherId: '$(publisherId)'
+        extensionVersion: '$(Build.BuildNumber)'
+        updateTasksVersion: true
+        outputPath: '$(extensionId)-dev-$(Build.BuildNumber).vsix'
+        arguments: '--overrides-file configs/dev.json --manifest-globs vss-extension.json "src/**/*.manifest.json"'
 
   - task: PackageAzureDevOpsExtension@5
     displayName: Package (release)
