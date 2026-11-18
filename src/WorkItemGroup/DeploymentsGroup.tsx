@@ -10,7 +10,6 @@ import { orderGroups, relativeTime } from "../Deployments";
 import AzdoClient from "../Services/AzdoClient";
 import DeploymentQueryService, {
     DeploymentsResult,
-    GroupedDeployments,
     PipelineDeployments,
 } from "../Services/DeploymentQueryService";
 
@@ -362,11 +361,15 @@ function DeploymentsGroup(): JSX.Element {
     }, [load]);
 
     if (error) {
-        return <div className="dsb-root dsb-error">Couldn't load deployments: {error}</div>;
+        return (
+            <div className="dsb-root dsb-error">Couldn't load deployments: {error}</div>
+        );
     }
 
     if (!result || !urls) {
-        return <div className="dsb-root dsb-loading">Loading deployments...</div>;
+        return (
+            <div className="dsb-root dsb-loading">Loading deployments...</div>
+        );
     }
 
     const ordered = orderGroups(result.groups);
