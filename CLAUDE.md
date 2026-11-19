@@ -55,8 +55,8 @@ credentials and reads `azure-pipelines.yml` from this repository. The Azure DevO
 `azuredevops` remote while the pipeline is repointed at GitHub; once it is, that remote can go.
 
 Pull requests are reviewed automatically by `.github/workflows/claude-review.yml`, which follows
-`.claude/skills/pr-review/SKILL.md`. A Dependabot update that changes only workflow files (a bump of a pinned action) passes the review check without a review, because the action cannot review a change to its own workflow; the build and CodeQL checks still gate it. The action refuses to run when the workflow file differs from the
-one on the default branch, so it cannot review the pull request that introduces or edits it.
+`.claude/skills/pr-review/SKILL.md`. The action refuses to run when the workflow file differs from the
+one on the default branch, so it cannot review the pull request that introduces or edits it. A Dependabot update that changes only workflow files (a bump of a pinned action) therefore passes the review check without a review; the build and CodeQL checks still gate it.
 
 ## Build conventions
 
