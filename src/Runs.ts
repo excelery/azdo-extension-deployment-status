@@ -21,7 +21,7 @@ export interface WorkItem {
     configs: Map<string, PipelineConfig>;
 }
 
-export interface Pipeline {
+interface Pipeline {
     projectId: string;
     definitionId: number;
     name: string;

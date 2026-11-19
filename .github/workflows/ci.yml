@@ -38,6 +38,9 @@ jobs:
         # left to Dependabot.
         run: npm audit --omit=dev --audit-level=high
 
+      - name: Check for unused code
+        run: npm run check:unused
+
       - name: Test
         run: npm test
         env:

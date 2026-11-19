@@ -22,15 +22,15 @@
     "publish-extension": "tfx extension publish --manifest-globs vss-extension.json \"src/**/*.manifest.json\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "fixtures": "node scripts/fixtures.mjs"
+    "fixtures": "node scripts/fixtures.mjs",
+    "check:unused": "knip"
   },
   "dependencies": {
     "azure-devops-extension-api": "^5.280.1",
     "azure-devops-extension-sdk": "^5.0.0",
     "azure-devops-ui": "^2.282.0",
     "react": "^16.8.1",
-    "react-dom": "^16.8.1",
-    "tslib": "^2.9.1"
+    "react-dom": "^16.8.1"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
@@ -38,7 +38,7 @@
     "@types/react-dom": "~17.0.11",
     "copy-webpack-plugin": "^14.0.0",
     "css-loader": "^7.1.4",
-    "file-loader": "^6.2.0",
+    "knip": "^6.46.1",
     "rimraf": "^6.1.4",
     "sass": "^1.108.2",
     "sass-loader": "^17.1.0",
