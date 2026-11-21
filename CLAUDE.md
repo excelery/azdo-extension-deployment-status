@@ -193,6 +193,8 @@ fetch and delegate to them. Put new logic there rather than in a service, or it 
 
 CI runs it before the build and publishes JUnit results, so a failure fails the run.
 
+`npm run check:unused` (knip) fails CI on a file, export or dependency that nothing uses, on every pull request and every push to `main`. Delete what a change replaces in the same change. `knip.json` lists what is used by hand and so cannot be seen by the tool.
+
 ## Verifying against a real organization
 
 Unit tests do not cover the SDK integration, and two techniques were worth more than the rest for that:

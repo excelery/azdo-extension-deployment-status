@@ -17,7 +17,7 @@ export function getAccessToken(): Promise<string> {
     return token.value;
 }
 
-export interface Page<T> {
+interface Page<T> {
     body: T | undefined;
     continuationToken: string | undefined;
 }

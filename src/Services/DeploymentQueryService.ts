@@ -8,7 +8,7 @@ import PipelineConfigService from "./PipelineConfigService";
 import PipelineRunService from "./PipelineRunService";
 import RunService from "./RunService";
 
-export { GroupedDeployments, PipelineDeployments } from "../Deployments";
+export { PipelineDeployments } from "../Deployments";
 
 export interface DeploymentsResult {
     groups: GroupedDeployments[];
