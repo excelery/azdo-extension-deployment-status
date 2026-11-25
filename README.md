@@ -1,5 +1,9 @@
 # Deployment Status to Boards for YAML
 
+[![CI](https://github.com/excelery/azdo-extension-deployment-status/actions/workflows/ci.yml/badge.svg)](https://github.com/excelery/azdo-extension-deployment-status/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/excelery/azdo-extension-deployment-status/actions/workflows/codeql.yml/badge.svg)](https://github.com/excelery/azdo-extension-deployment-status/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/github/license/excelery/azdo-extension-deployment-status)](LICENSE)
+
 This extension brings the Classic release pipeline feature [Automatically link work items to releases and report deployment status to a work item](https://learn.microsoft.com/en-us/azure/devops/pipelines/integrations/configure-pipelines-work-tracking#classic-report-boards) to YAML pipelines that deploy to Azure DevOps environments.
 
 The Azure DevOps team has this feature on the [roadmap](https://learn.microsoft.com/en-us/azure/devops/release-notes/roadmap/2024/boards-yaml-stage-status-on-work-item). But until there is built-in support for this, this extension can bridge the gap.
